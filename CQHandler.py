@@ -18,10 +18,13 @@ logging.basicConfig(
 
 ignoreList = []
 
-groupID = [79177174, 259641925]
-yande_url = 'https://yande.re/post.json'
+groupID = [79177174, 487308083, 259641925, 484271101]
+yande_url = 'https://yande.re/'
 danbooru_url = 'http://danbooru.donmai.us/'
 ignore_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'ignore.json')
+admin_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'admin.json')
+bface_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'bface.data')
+voice_config = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'voice.json')
 maxImageSize = 4000000
 maxExposionTime = 1
 
@@ -29,7 +32,12 @@ import CQSDK
 from CQGroupMemberInfo import CQGroupMemberInfo
 from CQMessage import CQAt, CQImage, CQRecord
 
+from pypinyin import pinyin, lazy_pinyin
+import pypinyin
+from wapresult import WolframAlphaResult
+
 import math
+import time
 from datetime import *
 import re
 import random
@@ -38,7 +46,7 @@ expTable = [100, 300, 800, 1500, 3800, 9000, 22000, 48000, 90000, 140000, 200000
 levelTable = ['淬体', '炼气', '筑基', '金丹', '辟谷', '元婴', '洞虚', '分神', '大乘', '渡劫', '仙人']
 subLevelTable = ['一层', '二层', '三层', '四层', '五层', '六层', '七层', '八层', '九层', '圆满']
 
-idolTable = ['Abe Nana', 'Aiba Yumi', 'Anastasia', 'Futaba Anzu', 'Shibuya Rin', 'Honda Mio', 'Igarashi Kyoko', 'Kanzaki Ranko', 'Jougasaki Mika', 'Mifune Miyu', 'Moroboshi Kirari', 'Shirasaka Koume', 'Tada Riina', 'Ninomiya Asuka', 'Takagaki Kaede']
+sourcePath = 'F:/酷Q Pro/data/image/'
 audioPath = 'F:/酷Q Pro/data/record/'
 imagePath = 'F:/酷Q Pro/data/image/comic/'
 
@@ -84,7 +92,7 @@ class Member:
         if hourDiff > 1:
             self.firstMsgTime = timestamp
         else:
-            xxRate += (timestamp - self.firstMsgTime)/3600/5
+            xxRate += (timestamp - self.firstMsgTime)/3600/2
         self.lastMsgTime = timestamp
 
         self.exp += self.expBaseRate * timeRate * xxRate * (1 + self.expRate)
@@ -144,17 +152,24 @@ class CQHandler(object):
 
     def __init__(self):
         logging.info('__init__')
-        self._key_regex = re.compile('^.xx|!save|!idol|!drive|!rank|!roll')
+        self._key_regex = re.compile('^.xx|!save|!idol|!drive|!rank|!roll|!learn|!forget|!list|!tag|!banword|!calc')
+        self.keywords = []
+        self.banwords = []
         self._data_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'xx.data')
         self.exProbility = 0.003
         self.msgCount = 0
         self.isRefresh = 0
         self.ignoreList = []
+        self.adminList = []
+        self.idolTable = []
         self.loadExp = {}
         self.saveExp = {}
+        self.wordMap = {}
+        self.bfaceMap = {}
         self.load()
         self.load_members(groupID[0])
         self.driveOn = True
+        logging.info(self.adminList)
         logging.info('__init_finished__')
 
     def __del__(self):
@@ -170,6 +185,10 @@ class CQHandler(object):
                 self.loadExp[int(res[0])] = member
             f.close()
             self.saveExp = self.loadExp
+        self.load_bface()
+        self.load_voice()
+        self.load_ignore()
+        self.load_admin()
 
     def save(self):
         with open(self._data_file,'w+') as f:
@@ -186,12 +205,68 @@ class CQHandler(object):
                 content = str(key) + ':' + str(value['exp']) + ',' + str(value['level']) + ',' + str(value['msg']) + ',' + str(value['expTime']) + '\n'
                 f.writelines(content)
             f.close()
+        if len(self.bfaceMap) > 0:
+            with open(bface_file, 'w+') as f:
+                for (key, value) in self.bfaceMap.items():
+                    content = str(key) + '#' + value + '\n'
+                    f.writelines(content)
+                f.close()
+        self.save_ignore()
+    
+    def save_ignore(self):
+        with open(ignore_file, 'w+') as f:
+            data = { 'QQID': self.ignoreList, 'keywords': self.keywords, 'pinyinwords': self.banwords }
+            logging.info(data)
+            f.write(json.dumps(data))
+            f.close()
 
     def load_ignore(self):
         with open(ignore_file, 'r') as f:
             data = json.load(f)
-            self.ignoreList = [int(n) for n in data]
+            self.ignoreList = [int(n) for n in data['QQID']]
+            self.keywords = [str(n) for n in data['keywords']]
+            self.banwords = [str(n) for n in  data['pinyinwords']]
+            logging.info(self.banwords)
             f.close()
+
+    def load_admin(self):
+        with open(admin_file, 'r') as f:
+            data = json.load(f)
+            self.adminList = [int(n) for n in data]
+            f.close()
+    
+    def load_bface(self):
+        with open(bface_file, 'r') as f:
+            for line in f:
+                res = line.split('#')
+                if res is None or len(res) <= 1:
+                    continue
+                key = res[0]
+                value = res[1]
+                self.bfaceMap[key] = value[:-1]
+            f.close()
+
+    def load_voice(self):
+        with open(voice_config, 'r') as f:
+            data = json.load(f)
+            self.idolTable = [str(s) for s in data['voice']]
+            self.speakerImage = [str(s) for s in data['v_image']]
+            f.close()
+
+    def check_keywords(self, key):
+        if 'CQ' in key:
+            return True
+        for word in self.keywords:
+            if word in key:
+                return True
+        for word in self.banwords:
+            if word in key:
+                return True
+        pystr = "".join(lazy_pinyin(unicode(key, 'gbk'), errors='ignore'))
+        for word in self.banwords:
+            if word in pystr:
+                return True
+        return False
 
     def refresh(self):
         for key in self.members:
@@ -203,15 +278,13 @@ class CQHandler(object):
 
     def explosion(self, QQID):
         member = self.members[QQID]
-        if member.exposionNum >= maxExposionTime:
-            return
-        if member:
-            preLevel = member.levelName
-            exp = random.randint(0, 30 + int(member.levelExp/10))
-            member.addExpR(exp)
-            member.exposionNum += 1
-            return preLevel, member.levelName
-        return "?", "?"
+        if member is None or member.exposionNum >= maxExposionTime: 
+            return "?", "?"
+        preLevel = member.levelName
+        exp = random.randint(0, 30 + int(member.levelExp/10))
+        member.addExpR(exp)
+        member.exposionNum += 1
+        return preLevel, member.levelName
 
     def harm(self, QQID):
         member = self.members[QQID]
@@ -227,12 +300,23 @@ class CQHandler(object):
             return
         hour = datetime.now().hour
         for (key, value) in self.loadExp.items():
+            logging.info("t")
+            logging.info(key)
             info = CQGroupMemberInfo(CQSDK.GetGroupMemberInfoV2(fromGroup, key))
             member = Member(info)
             member.firstMsgHour = hour
             member.lastMsgHour = hour
             member.load(value['exp'], value['level'], value['msg'], value['expTime'])
             self.members[key] = member
+
+    def authority(self, fromGroup, QQID):
+        logging.info(QQID)
+        logging.info(QQID in self.adminList)
+        if QQID in self.adminList:
+            return True
+        else:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '你无权进行此操作' )
+            return False
 
     def rank(self, fromGroup, limit=None):
         content = '-----------------------辣条榜-----------------------\n'
@@ -252,10 +336,86 @@ class CQHandler(object):
         except Exception as e:
             logging.exception(e)
 
-    def roll(self, fromGrouop, QQID, para=None):
+    def addBanword(self, fromGroup, QQID, word):
+        if self.authority(fromGroup, QQID):
+            value = ''.join(lazy_pinyin(unicode(word, 'gbk'), errors='ignore'))
+            logging.info(value)
+            self.banwords.append(value)
+            try:
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + "知道了，我会无视" + str(word) + "的")
+            except Exception as e:
+                logging.exception(e)
+
+    def calc(self, fromGroup, QQID, inpt):
+        logging.info("11")
+        wapr = WolframAlphaResult(inpt)
+        result = wapr.calcResult()
+        logging.info(result)
+        if result:
+            try:
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '结果是: ' + str(result))
+            except Exception as e:
+                logging.exception(e)
+        else:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '输入有误')
+
+    def learnBface(self, fromGroup, QQID, para):
+        if para is None or para == '' or para.find('#') == -1:
+            return
+        results = para.split('#')
+        key = results[0]
+        if self.check_keywords(key):
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '讨厌，群主娘不学%>_<%')
+            return
+        if self.bfaceMap.has_key(key):
+            if self.authority(fromGroup, QQID) == False:
+                return
+        value = results[1]
+        logging.info(value)
+        if value.find('\n') == 1 or len(value) > 500:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '这个太难了，群主娘学不会T_T')
+            return
+        self.bfaceMap[key] = value
+        try:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '知道了!' + str(key) + '->' + value)
+        except Exception as e:
+            logging.exception(e)
+
+    def forget(self, fromGroup, QQID, para):
+        if para is None or para == '':
+            return
+        if self.authority(fromGroup, QQID) == False:
+            return
+        key = str(para)
+        if self.bfaceMap.has_key(key):
+            del self.bfaceMap[key]
+            retMsg = str(CQAt(QQID)) + str(key) + '代表的是什么呢?_?，我已经记不清楚了呢(遗忘成功!)'
+        else:
+            retMsg = str(CQAt(QQID)) + '我还没学过这个词呀( ⊙ o ⊙ )！'
+        try:
+            CQSDK.SendGroupMsg(fromGroup, retMsg)
+        except Exception as e:
+            logging.exception(e)
+
+    def list(self, fromGroup):
+        if len(self.bfaceMap) > 0:
+            content = '现在记住的姿势有\n'
+            for key in self.bfaceMap.keys():
+                content += (str(key) + ' ')
+        else:
+            content = '我还什么都不会呢%>_<%'
+        try:
+            CQSDK.SendGroupMsg(fromGroup, content)
+        except Exception as e:
+            logging.exception(e)
+
+    def roll(self, fromGroup, QQID, para=None):
         max = 100
-        if para is not None:
-            max = re.findall(r"\d+", para)[0]
+        if para is not None and para != '':
+            nums = re.findall(r"\d+", para)
+            if nums:
+                max = int(nums[0])
+        logging.info(max)
         result = random.randint(0, max)
         res_normlize = 100 * result / max
         member = self.members[QQID]
@@ -271,15 +431,14 @@ class CQHandler(object):
     def speak(self, fromGroup, QQID, tag=None):
         path = audioPath
         speaker = ''
-        if tag is not None:
+        if tag is not None and tag != '':
             findTag = False
-            for key in idolTable:
+            for key in self.idolTable:
                 keyLower = key.lower()
                 if keyLower.find(tag.lower()) >= 0:
                     speaker = key
                     path += speaker
                     findTag = True
-                    logging.info(path)
                     break
             if findTag == False:
                 try:
@@ -288,13 +447,25 @@ class CQHandler(object):
                     logging.exception(e)
                 return
         else:
-            speaker = idolTable[random.randint(0, len(idolTable) - 1)]
+            speakerNum = random.randint(0, len(self.idolTable) - 1)
+            speaker = self.idolTable[speakerNum]
             path += speaker
         files = os.listdir(path)
-        num = random.randint(0, len(files))
+        num = random.randint(0, len(files) - 1)
         filename = '/' + speaker + '/' + str(files[num])
+        retMsg = speaker
+        if speaker in self.speakerImage:
+            logging.info("in")
+            speakerImgDist = sourcePath + speaker
+            logging.info(speakerImgDist)
+            imgFiles = os.listdir(speakerImgDist)
+            logging.info(imgFiles)
+            imgNum = random.randint(0, len(imgFiles) - 1)
+            imgFilename = '/' + speaker + '/' + str(imgFiles[imgNum])
+            logging.info(imgFilename)
+            retMsg += '\n' + str(CQImage(imgFilename))
         try:
-            CQSDK.SendGroupMsg(fromGroup, speaker)
+            CQSDK.SendGroupMsg(fromGroup, retMsg)
             CQSDK.SendGroupMsg(fromGroup, str(CQRecord(filename)))
         except Exception as e:
             logging.exception(e)
@@ -307,6 +478,57 @@ class CQHandler(object):
             CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + str(CQImage(filename)))
         except Exception as e:
             logging.exception(e)
+
+    def tagRecommend(self, fromGroup, QQID, tag=None):
+        full_url = yande_url + 'tag.json?order=count&limit=40'
+        content = ''
+        if tag is None:
+            pageNumber = random.randint(0, 10)
+            full_url += '&page=' + str(pageNumber)
+            tagIndex = [random.randint(0, 39) for _ in range(5)]
+            try:
+                response = requests.get(full_url)
+            except Exception as e:
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '咋回事儿啊,网络好像开小差了')
+                return
+            json_result = json.loads(response.text)
+            if len(json_result) == 0:
+                try:
+                    CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '已经没有什么tag可以推荐了')
+                except Exception as e:
+                    logging.exception(e)
+                return False
+            else:
+                content += '群主娘为你推荐了几个tag哦\n'
+                for k in tagIndex:
+                    content += str(json_result[k]['name']) + ' '
+        else:
+            logging.info("f1")
+            full_url += '&name=' + str(tag)
+            try:
+                response = requests.get(full_url)
+            except Exception as e:
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '咋回事儿啊,网络好像开小差了')
+                return
+            json_result = json.loads(response.text)
+            result_length = len(json_result)
+            if json_result is None or result_length == 0:
+                try:
+                    CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '还是找不到相关tag哦')
+                except Exception as e:
+                    logging.info(e)
+                return False
+            else:
+                content += '你要找的tag是不是\n'
+                maxTag = 5 if result_length >= 5 else result_length
+                for k in range(0, maxTag):
+                    content += str(json_result[k]['name']) + ' '
+        try:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + content)
+        except Exception as e:
+            logging.exception(e)
+        return True
+
     
     def drive_from_danbooro(self, fromGroup, QQID, tag=None):
         full_url = danbooru_url + 'posts.json'
@@ -324,16 +546,11 @@ class CQHandler(object):
             CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '老司机翻车啦！')
             return
         except Exception as e:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '找不到你想要的tag哦，请重新输入')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '神秘的东方力量导致此次开车失败')
             return
-        logging.info(response.text)
         json_result = json.loads(response.text)
         if len(json_result) == 0:
-            try:
-                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '找不到你想要的tag哦，请重新输入')
-            except Exception as e:
-                logging.exception(e)
-            return
+            return False
         illust = json_result[random.randint(0, len(json_result) - 1)]
         id = illust['id']
         image_url = illust['file_url']
@@ -356,7 +573,7 @@ class CQHandler(object):
         return True
 
     def drive_online(self, fromGroup, QQID, tag=None):
-        full_url = yande_url
+        full_url = yande_url + 'post.json'
         if tag is not None:
             tagPara = '?tags=' + str(tag)
             full_url += tagPara
@@ -379,9 +596,10 @@ class CQHandler(object):
             ret = self.drive_from_danbooro(fromGroup, QQID, tag)
             if ret == False:
                 try:
-                    CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '找不到你想要的tag哦，请重新输入')
+                    CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '找不到你想要的tag%>_<%，群主娘在尝试为你推荐相关tag哦↖(^ω^)↗')
                 except Exception as e:
                     logging.exception(e)
+                self.tagRecommend(fromGroup, QQID, tag)
             return
         illust = json_result[random.randint(0, len(json_result) - 1)]
         id = illust['id']
@@ -428,32 +646,50 @@ class CQHandler(object):
         hour = datetime.now().hour
         logging.info('OnEvent_GroupMsg: subType={0}, sendTime={1}, fromGroup={2}, fromQQ={3}, fromAnonymous={4}, msg={5}, font={6}'.format(subType, hour, fromGroup, fromQQ, fromAnonymous, msg, font))
         if fromGroup in groupID:
+            logging.info("flag0")
             if hour == 23 and self.isRefresh == 0:
                 self.isRefresh = 1
             elif hour == 0 and self.isRefresh == 1:
                 self.refresh()
                 self.save()
                 self.isRefresh = 0
+            logging.info("flag1")
             self.msgCount += 1
             if self.msgCount == self.saveRoutine:
                 self.save()
                 self.msgCount = 0
-            if fromQQ not in self.members:
-                info = CQGroupMemberInfo(CQSDK.GetGroupMemberInfoV2(fromGroup, fromQQ))
-                newMember = Member(info)
-                newMember.firstMsgHour = hour
-                newMember.lastMsgHour = hour
-                self.members[fromQQ] = newMember
-                if fromQQ in self.loadExp:
-                    loadData = self.loadExp.pop(fromQQ)
-                    newMember.load(loadData['exp'], loadData['level'], loadData['msg'], loadData['expTime'])
-            self.members[fromQQ].addExp(int(hour), sendTime)
-            content = msg.replace(' ','')
+            logging.info("flag2")
+
+            if fromGroup == groupID[0]:
+                if fromQQ not in self.members:
+                    info = CQGroupMemberInfo(CQSDK.GetGroupMemberInfoV2(fromGroup, fromQQ))
+                    newMember = Member(info)
+                    newMember.firstMsgHour = hour
+                    newMember.lastMsgHour = hour
+                    self.members[fromQQ] = newMember
+                self.members[fromQQ].addExp(int(hour), sendTime)
+                p = random.random()
+                if p < self.exProbility and self.members[fromQQ].exposionNum < maxExposionTime:
+                    preLevel, afterLevel = self.explosion(fromQQ)
+                    if preLevel != afterLevel:
+                        retMsg = str(CQAt(fromQQ)) + "在修炼中顿悟，实力获得大幅提升，由 " + preLevel + " 提升到 " + afterLevel
+                    else:
+                        retMsg = str(CQAt(fromQQ)) + "在修炼中顿悟，感觉内力有了小幅提升"
+                    try:
+                        CQSDK.SendGroupMsg(fromGroup, retMsg)
+                    except Exception as e:
+                        logging.exception(e)
+
+            logging.info("flag3")
+            msg = msg.replace(' ', '')
+            msg = msg.replace('！', '!')
+            content = msg.lower()
             result = re.findall(self._key_regex, content)
             if result:
                 cmd = result[0]
-                para = content[len(cmd):]
-                if cmd == '.xx':
+                logging.info(cmd)
+                para = msg[len(cmd):]
+                if cmd == '.xx' and fromGroup == groupID[0]:
                     retMsg = '你现在的境界为 ' + self.members[fromQQ].levelName + str(CQAt(fromQQ))
                     try:
                         CQSDK.SendGroupMsg(fromGroup, retMsg)
@@ -474,18 +710,29 @@ class CQHandler(object):
                     self.rank(fromGroup, para)
                 elif cmd == '!roll':
                     self.roll(fromGroup, fromQQ, para)
+                elif cmd == '!learn':
+                    self.learnBface(fromGroup, fromQQ, para)
+                elif cmd == '!forget':
+                    self.forget(fromGroup, fromQQ, para)
+                elif cmd == '!list':
+                    self.list(fromGroup)
+                elif cmd == '!tag':
+                    self.tagRecommend(fromGroup, fromQQ)
+                elif cmd == '!banword':
+                    self.addBanword(fromGroup, fromQQ, para)
+                elif cmd == '!calc':
+                    self.calc(fromGroup, fromQQ, para)
             
-            p = random.random()
-            if p < self.exProbility:
-                preLevel, afterLevel = self.explosion(fromQQ)
-                if preLevel != afterLevel:
-                    retMsg = str(CQAt(fromQQ)) + "在修炼中顿悟，实力获得大幅提升，由 " + preLevel + " 提升到 " + afterLevel
-                else:
-                    retMsg = str(CQAt(fromQQ)) + "在修炼中顿悟，感觉内力有了小幅提升"
+            logging.info("flag4")
+
+            logging.info("flag5")
+
+            if msg in self.bfaceMap.keys():
                 try:
-                    CQSDK.SendGroupMsg(fromGroup, retMsg)
+                    CQSDK.SendGroupMsg(fromGroup, self.bfaceMap[msg])
                 except Exception as e:
                     logging.exception(e)
+            logging.info("flag6")
 
     def OnEvent_DiscussMsg(self, subType, sendTime, fromDiscuss, fromQQ, msg, font):
         logging.info('OnEvent_DiscussMsg: subType={0}, sendTime={1}, fromDiscuss={2}, fromQQ={3}, msg={4}, font={5}'.format(subType, sendTime, fromDiscuss, fromQQ, msg, font))

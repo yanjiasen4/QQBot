@@ -2,3 +2,6 @@ Python27/
 *.pyc
 ignore.json
 xx.data
+*.json
+*.data
+test.py
