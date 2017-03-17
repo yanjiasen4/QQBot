@@ -25,6 +25,7 @@ ignore_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'ignore.j
 admin_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'admin.json')
 bface_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'bface.data')
 voice_config = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'voice.json')
+invoker_skill = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'invoker.json')
 maxImageSize = 4000000
 maxExposionTime = 1
 
@@ -45,6 +46,7 @@ import random
 expTable = [100, 300, 800, 1500, 3800, 9000, 22000, 48000, 90000, 140000, 200000]
 levelTable = ['淬体', '炼气', '筑基', '金丹', '辟谷', '元婴', '洞虚', '分神', '大乘', '渡劫', '仙人']
 subLevelTable = ['一层', '二层', '三层', '四层', '五层', '六层', '七层', '八层', '九层', '圆满']
+invokerSkillIndex = [0, 3, 5, 7, 9, 11, 13, 15, 19, 21, 27]
 
 sourcePath = 'F:/酷Q Pro/data/image/'
 audioPath = 'F:/酷Q Pro/data/record/'
@@ -152,7 +154,7 @@ class CQHandler(object):
 
     def __init__(self):
         logging.info('__init__')
-        self._key_regex = re.compile('^.xx|!save|!idol|!drive|!rank|!roll|!learn|!forget|!list|!tag|!banword|!calc')
+        self._key_regex = re.compile('^.xx|!save|!idol|!drive|!rank|!roll|!learn|!forget|!list|!tag|!banword|!calc|!invoke')
         self.keywords = []
         self.banwords = []
         self._data_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'xx.data')
@@ -166,6 +168,7 @@ class CQHandler(object):
         self.saveExp = {}
         self.wordMap = {}
         self.bfaceMap = {}
+        self.invokerSkill = {}
         self.load()
         self.load_members(groupID[0])
         self.driveOn = True
@@ -189,6 +192,7 @@ class CQHandler(object):
         self.load_voice()
         self.load_ignore()
         self.load_admin()
+        self.load_invoker()
 
     def save(self):
         with open(self._data_file,'w+') as f:
@@ -252,6 +256,18 @@ class CQHandler(object):
             self.idolTable = [str(s) for s in data['voice']]
             self.speakerImage = [str(s) for s in data['v_image']]
             f.close()
+
+    def load_invoker(self):
+        with open(invoker_skill, 'r') as f:
+            data = json.load(f)
+            logging.info("???")
+            for (key, value) in data.items():
+                skillName = str(value['skill_name'])
+                audioNum = int(value['audio_files_num'])
+                self.invokerSkill[str(key)] = {'skillName': skillName, 'audioNum': audioNum}
+                logging.info("{0},{1}".format(skillName,audioNum))
+            f.close()
+        logging.info(self.invoker)
 
     def check_keywords(self, key):
         if 'CQ' in key:
@@ -347,7 +363,6 @@ class CQHandler(object):
                 logging.exception(e)
 
     def calc(self, fromGroup, QQID, inpt):
-        logging.info("11")
         wapr = WolframAlphaResult(inpt)
         result = wapr.calcResult()
         logging.info(result)
@@ -358,6 +373,61 @@ class CQHandler(object):
                 logging.exception(e)
         else:
             CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '输入有误')
+
+    def calcInvokerSkill(self, inpt):
+        sum = 0
+        stable = {'q': 9, 'w': 3, 'e': 1}
+        for s in inpt:
+            sum += stable[s]
+        return sum
+
+    def invoker(self, fromGroup, QQID, para=None):
+        logging.info("invoke")
+        path = 'Invoker/'
+        logging.info(para)
+        audioPrefix = path + 'Invo_ability_'
+        logging.info(audioPrefix)
+        audioFilePath = ''
+        skillName = ''
+        logging.info(para)
+        if para is None:
+            logging.info("Invo1")
+            skillIndex = str(invokerSkillIndex[0, random.randint(0, len(invokerSkillIndex) - 1)])
+            skill = self.invokerSkill[skillIndex]
+            audioIndex = str(random.randint(1, skill['audioNum']))
+            audioPostfix = audioIndex.zfill(2)
+            skillName = skill['skillName']
+            audioFilePath = audioPrefix + skill['skillName'] + '_' + audioPostfix + '.mp3'
+        else:
+            logging.info("Invo2")
+            if len(para) != 3:
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '施法出现错误？')
+                self.invokerFail(fromGroup)
+                return
+            regix = '^[qwe]{0,3}$'
+            pat = re.compile(regix)
+            if pat.match(para):
+                ret = str(self.calcInvokerSkill(para))
+                skill = self.invokerSkill[ret]
+                audioIndex = str(random.randint(1, skill['audioNum']))
+                audioPostfix = audioIndex.zfill(2)
+                skillName = skill['skillName']
+                audioFilePath = audioPrefix + skill['skillName'] + '_' + audioPostfix + '.mp3'
+            else:
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '咒语记混了')
+                self.invokerFail(fromGroup)
+                return
+        try:
+            logging.info("Invo3")
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '释放了' + skillName)
+            CQSDK.SendGroupMsg(fromGroup, str(CQRecord(audioFilePath)))
+        except Exception as e:
+            logging.exception(e)
+
+    def invokerFail(self, fromGroup):
+        index = str(random.randint(1, 13)).zfill(2)
+        audioFilePath = 'Invoker/' + 'Invo_failure_' +  index + '.mp3'
+        CQSDK.SendGroupMsg(fromGroup, str(CQRecord(audioFilePath)))
 
     def learnBface(self, fromGroup, QQID, para):
         if para is None or para == '' or para.find('#') == -1:
@@ -722,6 +792,9 @@ class CQHandler(object):
                     self.addBanword(fromGroup, fromQQ, para)
                 elif cmd == '!calc':
                     self.calc(fromGroup, fromQQ, para)
+                elif cmd == '!invoke':
+                    logging.info(para)
+                    self.invoker(fromGroup, fromQQ, para)
             
             logging.info("flag4")
 
