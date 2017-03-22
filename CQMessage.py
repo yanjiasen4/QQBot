@@ -28,4 +28,16 @@ class CQRecord:
 
     def __str__(self):
         return "[CQ:record,file={}]".format(self.file)
+
+class CQShare:
+    PATTERN = re.compile(r'\[CQ:share,url=(.+?),title=(.+?),content=(.+?),image=(.+?)\]')
+
+    def __init__(self, url, title, content, image):
+        self.url = url
+        self.title = title
+        self.content = content
+        self.image = image
+
+    def __str__(self):
+        return "[CQ:share,url={},title={},content={},image={}]".format(self.url, self.title, self.content, self.image)
         

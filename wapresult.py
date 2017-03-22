@@ -14,10 +14,9 @@ class WolframAlphaResult:
         raw_result = self.waeo.PerformQuery(query)
         content = wap.WolframAlphaQueryResult(raw_result)
         result = None
+        resultImg = None
         if content.IsSuccess():
-            print content.DataTypes()
             dataType = content.DataTypes()[0]
-            print dataType
             if dataType == 'Math':
                 for pod in content.Pods():
                     waPod = wap.Pod(pod)
@@ -35,10 +34,17 @@ class WolframAlphaResult:
             else:
                 for pod in content.Pods():
                     waPod = wap.Pod(pod)
-                    if 'integral' in str(waPod.Title()[0]):
+                    solvedResults = ['Differential equation solution', 'Limit']
+                    waPodTitle = str(waPod.Title()[0])
+                    if 'integral' in waPodTitle or waPodTitle in solvedResults:
                         waSubpod = wap.Subpod(waPod.Subpods()[0])
                         result = waSubpod.Plaintext()[0]
                         rightIndex = result.rindex('=') + 2
                         result = result[rightIndex:]
-        return result
+                        img = waSubpod.Img()
+                        resultImg = wap.scanbranches(img[0], 'src')[0]
+                        break
+                    else:
+                        continue
+        return result, resultImg
 

