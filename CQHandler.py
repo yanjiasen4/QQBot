@@ -18,9 +18,9 @@ logging.basicConfig(
     filemode    = 'w+'
 )
 
-ignoreList = []
+config = json.load(open('config.json', 'r', encoding='utf-8'))
 
-groupID = [79177174, 487308083, 259641925, 484271101]
+groupID = config['groups']
 yande_url = 'https://yande.re/'
 danbooru_url = 'http://danbooru.donmai.us/'
 ignore_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'ignore.json')
@@ -47,18 +47,17 @@ from datetime import *
 import re
 import random
 
-expTable = [100, 300, 800, 1500, 3800, 9000, 22000, 48000, 90000, 140000, 200000]
-levelTable = ['´ãÌå', 'Á¶Æø', 'Öþ»ù', '½ðµ¤', '±Ù¹È', 'ÔªÓ¤', '¶´Ðé', '·ÖÉñ', '´ó³Ë', '¶É½Ù', 'ÏÉÈË']
-subLevelTable = ['Ò»²ã', '¶þ²ã', 'Èý²ã', 'ËÄ²ã', 'Îå²ã', 'Áù²ã', 'Æß²ã', '°Ë²ã', '¾Å²ã', 'Ô²Âú']
-invokerSkillIndex = [0, 3, 5, 7, 9, 11, 13, 15, 19, 21, 27]
+expTable = config['expTable']
+levelTable = config['levelTable']
+subLevelTable = config['subLevelTable']
+invokerSkillIndex = config['invokerSkillIndex']
 
-sourcePath = 'F:/¿áQ Pro/data/image/'
-audioPath = 'F:/¿áQ Pro/data/record/'
-imagePath = 'F:/¿áQ Pro/data/image/comic/'
+sourcePath = config['sourcePath']
+audioPath = config['audioPath']
+imagePath = config['imagePath']
 
 systemQQID = 1000000
 anonymousQQID = 80000000
-
 
 class Member:
     info = None
@@ -374,12 +373,14 @@ class CQHandler(object):
                 logging.exception(e)
 
     def downloadCalcImg(url):
-        logging.info(url)
         r = requests.get(str(url))
-        logging.info("yes")
         filename = sourcePath + 'calc.gif'
-        logging.info(filename)
         open(filename, "wb").write(r.content)
+
+    def downloadBfaceImg(url): 
+        with open(sourcePath, 'r+') as f:
+            pass
+
 
     def calc(self, fromGroup, QQID, inpt):
         wapr = WolframAlphaResult(inpt)
