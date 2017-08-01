@@ -18,9 +18,13 @@ logging.basicConfig(
     filemode    = 'w+'
 )
 
-ignoreList = []
+config = json.load(open('config.json', 'r', encoding='utf-8'))
 
+<<<<<<< HEAD
 groupID = [79177174, 487308083, 259641925, 484271101, 649028414, 305875334]
+=======
+groupID = config['groups']
+>>>>>>> 29ae442676f9ddd68248afd2181141190fd6811b
 yande_url = 'https://yande.re/'
 danbooru_url = 'http://danbooru.donmai.us/'
 str_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.json')
@@ -51,6 +55,7 @@ from datetime import *
 import re
 import random
 
+<<<<<<< HEAD
 #import PIL
 #from PIL import Image
 # from PIL import ImageDraw
@@ -84,6 +89,16 @@ sourcePath = 'F:/¿áQ Pro/data/image/'
 audioPath = 'F:/¿áQ Pro/data/record/'
 imagePath = 'F:/¿áQ Pro/data/image/comic/'
 specAudioPath = 'special/'
+=======
+expTable = config['expTable']
+levelTable = config['levelTable']
+subLevelTable = config['subLevelTable']
+invokerSkillIndex = config['invokerSkillIndex']
+
+sourcePath = config['sourcePath']
+audioPath = config['audioPath']
+imagePath = config['imagePath']
+>>>>>>> 29ae442676f9ddd68248afd2181141190fd6811b
 
 systemQQID = 1000000
 anonymousQQID = 80000000
@@ -414,12 +429,14 @@ class CQHandler(object):
                 logging.exception(e)
 
     def downloadCalcImg(url):
-        logging.info(url)
         r = requests.get(str(url))
-        logging.info("yes")
         filename = sourcePath + 'calc.gif'
-        logging.info(filename)
         open(filename, "wb").write(r.content)
+
+    def downloadBfaceImg(url): 
+        with open(sourcePath, 'r+') as f:
+            pass
+
 
     def calc(self, fromGroup, QQID, inpt):
         wapr = WolframAlphaResult(inpt)
