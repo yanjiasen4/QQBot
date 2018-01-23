@@ -44,6 +44,11 @@ class WolframAlphaResult:
                         img = waSubpod.Img()
                         resultImg = wap.scanbranches(img[0], 'src')[0]
                         break
+                    elif 'Result' in waPodTitle:
+                        waSubpod = wap.Subpod(waPod.Subpods()[0])
+                        result = waSubpod.Plaintext()[0]
+                        img = waSubpod.Img()
+                        resultImg = wap.scanbranches(img[0], 'src')[0]
                     else:
                         continue
         return result, resultImg

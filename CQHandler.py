@@ -8,8 +8,6 @@ reload(sys)
 sys.setdefaultencoding('gbk')
 
 import logging
-import base64
-from bs4 import BeautifulSoup
 logging.basicConfig(
     level       = logging.INFO,
     format      = '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
@@ -18,7 +16,7 @@ logging.basicConfig(
     filemode    = 'w+'
 )
 
-groupID = [79177174, 487308083, 259641925, 484271101, 649028414, 305875334]
+groupID = [79177174, 487308083, 259641925, 484271101, 649028414, 305875334, 117057359, 88164807]
 yande_url = 'https://yande.re/'
 danbooru_url = 'http://danbooru.donmai.us/'
 str_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.json')
@@ -38,7 +36,7 @@ import CQSDK
 from CQGroupMemberInfo import CQGroupMemberInfo
 from CQMessage import CQAt, CQImage, CQRecord, CQShare
 
-from Card import CardManager, LatiaoPools
+from Card import CardManager
 
 from pypinyin import pinyin, lazy_pinyin
 import pypinyin
@@ -53,7 +51,7 @@ import random
 expTable = [100, 300, 800, 1500, 3800, 9000, 22000, 48000, 90000, 140000, 200000, 450000]
 levelTable = ["淬体", "炼气", "筑基", "金丹", "辟谷", "元婴", "洞虚", "分神", "大乘", "渡劫", "仙人"]
 subLevelTable = ["一层", "二层", "三层", "四层", "五层", "六层", "七层", "八层", "九层", "圆满"]
-drawLimitTable = [1,3,6,10,15,20,30,40,50,60,80,110]
+drawLimitTable = [2,6,10,15,20,25,30,36,42,55,70,100]
 invokerSkillIndex = [0, 3, 5, 7, 9, 11, 13, 15, 19, 21, 27]
 audioTable = {
     'aya': 'Chatwheel_ay_ay_ay.wav',
@@ -77,7 +75,10 @@ audioTable = {
 sourcePath = 'F:/酷Q Pro/data/image/'
 audioPath = 'F:/酷Q Pro/data/record/'
 imagePath = 'F:/酷Q Pro/data/image/comic/'
+dotaPath = 'F:/酷Q Pro/data/image/dota/'
 specAudioPath = 'special/'
+
+helpInfo = ''
 
 systemQQID = 1000000
 anonymousQQID = 80000000
@@ -99,6 +100,7 @@ class Member:
     rollNum = 0
     drawTimes = 0
     drawLimit = 0
+    dotaId = '0'
 
     def __init__(self, data):
         self.info = data
@@ -146,7 +148,7 @@ class Member:
             self.nextLevelExp = expTable[self.level]
             self.exp = self.nextLevelExp - restExp
 
-    def load(self, exp, level, msg, expTime, drawTime):
+    def load(self, exp, level, msg, expTime, drawTime, dotaId):
         self.exp = exp
         self.level = level
         self.nextLevelExp = expTable[self.level]
@@ -154,6 +156,7 @@ class Member:
         self.exposionNum = expTime
         self.drawTimes = drawTime
         self.drawLimit = drawLimitTable[self.level] + int(float(math.floor(10*self.exp/self.nextLevelExp))*(drawLimitTable[self.level+1]-drawLimitTable[self.level])/10)
+        self.dotaId = dotaId
 
     def refresh(self):
         self.expMsg = 0
@@ -163,8 +166,11 @@ class Member:
 
     @property
     def levelName(self):
+        logging.info(self.level)
         content = levelTable[self.level]
+        logging.info(content)
         subLevel = subLevelTable[int(math.floor(10*self.exp/self.nextLevelExp))]
+        logging.info(subLevel)
         return content + subLevel
 
     @property
@@ -186,7 +192,7 @@ class CQHandler(object):
 
     def __init__(self):
         logging.info('__init__')
-        self._key_regex = re.compile('^.xx|!save|!idol|!drive|!rank|!roll|!learn|!forget|!list|!tag|!banword|!calc|!invoke|!draw|!check')
+        self._key_regex = re.compile('^.xx|!save|!idol|!drive|!rank|!roll|!learn|!forget|!list|!tag|!banword|!calc|!invoke|!draw|!check|!dota|!bind')
         self.keywords = []
         self.banwords = []
         self._data_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'xx.data')
@@ -222,7 +228,8 @@ class CQHandler(object):
             for line in f:
                 res = line.split(':')
                 paras = res[1].split(',')
-                member = {'exp': float(paras[0]), 'level': int(paras[1]), 'msg': int(paras[2]), 'expTime': int(paras[3]), 'drawTime': int(paras[4])}
+                logging.info('?????:{0}'.format(paras[5]))
+                member = {'exp': float(paras[0]), 'level': int(paras[1]), 'msg': int(paras[2]), 'expTime': int(paras[3]), 'drawTime': int(paras[4]), 'dotaId': str(paras[5])[:-1]}
                 self.loadExp[int(res[0])] = member
             f.close()
             self.saveExp = self.loadExp
@@ -246,11 +253,12 @@ class CQHandler(object):
                     self.saveExp[key]['msg'] = self.members[key].expMsg
                     self.saveExp[key]['expTime'] = self.members[key].exposionNum
                     self.saveExp[key]['drawTime'] = self.members[key].drawTimes
+                    self.saveExp[key]['dotaId'] = self.members[key].dotaId
             for (key, value) in self.members.items():
                 if key not in self.saveExp:
-                    self.saveExp[key] = {'exp': value.exp, 'level': value.level, 'msg': value.expMsg, 'expTime': value.exposionNum, 'drawTime': value.drawTimes}
+                    self.saveExp[key] = {'exp': value.exp, 'level': value.level, 'msg': value.expMsg, 'expTime': value.exposionNum, 'drawTime': value.drawTimes, 'dotaId': value.dotaId }
             for (key, value) in self.saveExp.items():
-                content = str(key) + ':' + str(value['exp']) + ',' + str(value['level']) + ',' + str(value['msg']) + ',' + str(value['expTime']) + ',' + str(value['drawTime']) + '\n'
+                content = str(key) + ':' + str(value['exp']) + ',' + str(value['level']) + ',' + str(value['msg']) + ',' + str(value['expTime']) + ',' + str(value['drawTime']) + ',' + str(value['dotaId']) + '\n'
                 f.writelines(content)
             f.close()
         if len(self.bfaceMap) > 0:
@@ -334,7 +342,7 @@ class CQHandler(object):
         if os.path.getsize(illust_rec):
            with open(illust_rec, 'r') as f:
                 tmp = f.read().decode('gbk')
-                logging.info(tmp)
+                # logging.info(tmp)
                 self.illustMap = yaml.safe_load(tmp)
                 f.close()
         logging.info("load_finished")
@@ -378,7 +386,10 @@ class CQHandler(object):
         if member is None or member.exposionNum >= maxExposionTime: 
             return "?", "?"
         preLevel = member.levelName
-        exp = random.randint(0, 30 + int(member.levelExp/10))
+        maxExp = 400
+        if maxExp > int(member.levelExp/10):
+            maxExp = 30 + int(member.levelExp/10)
+        exp = random.randint(0, maxExp)
         member.addExpR(exp)
         member.exposionNum += 1
         return preLevel, member.levelName
@@ -393,11 +404,9 @@ class CQHandler(object):
         return "?", "?"
     
     def load_members(self, fromGroup):
-        logging.info("!!!")
         if self.loadExp is None or len(self.loadExp) == 0:
             return
         hour = datetime.now().hour
-        logging.info("???")
         for (key, value) in self.loadExp.items():
             logging.info(key)
             info = CQGroupMemberInfo(CQSDK.GetGroupMemberInfoV2(fromGroup, key))
@@ -406,7 +415,7 @@ class CQHandler(object):
                 member = Member(info)
                 member.firstMsgHour = hour
                 member.lastMsgHour = hour
-                member.load(value['exp'], value['level'], value['msg'], value['expTime'], value['drawTime'])
+                member.load(value['exp'], value['level'], value['msg'], value['expTime'], value['drawTime'], value['dotaId'])
                 self.members[key] = member
 
     def authority(self, fromGroup, QQID):
@@ -424,7 +433,10 @@ class CQHandler(object):
             listNum = int(limit)
         count = 0
         for (key, value) in members:
-            count += 1            
+            logging.info(key)
+            logging.info(value.info.Card)
+            logging.info(value.levelName)
+            count += 1
             content += str(count) + '.' + str(value.info.Card) + '({0})'.format(key) + ': ' + str(value.levelName) + '\n'
             if count >= listNum:
                 break
@@ -443,6 +455,59 @@ class CQHandler(object):
                 CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + "知道了，我会无视" + str(word) + "的")
             except Exception as e:
                 logging.exception(e)
+
+    def bindDotaAccount(self, fromGroup, QQID, did):
+        if did is None or did == '' or not did.isdigit():
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '请输入正确的dota2 id')
+            return
+        url = 'https://api.opendota.com/api/players/{0}'.format(did)
+        logging.info('sending request to {0}'.format(url))
+        try:
+            r = requests.get(url, timeout=defaultTimeout)
+        except Exception as e:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '绑定出错，请重试')
+            return False
+        playerData = json.loads(r.text)
+        logging.info(playerData['tracked_until'])
+        if playerData['tracked_until'] is not None:
+            member = self.members[QQID]
+            member.dotaId = did
+            logging.info(member.dotaId)
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '绑定成功')
+        else:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '绑定失败，请输入正确的ID')
+
+    def dota2Match(self, fromGroup, QQID, n):
+        if int(n) > 20:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '只能查询最多最近20场比赛数据')
+            return
+        member = self.members[QQID]
+        if member.dotaId == '0':
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '请先绑定dota2 Id，使用指令：!bind <dota2 id>')
+            return
+        url = 'http://localhost:7001/?id={0}&n={1}'.format(member.dotaId, n)
+        CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '比赛数据图生成中......')
+        mUrl = 'https://api.opendota.com/api/players/{0}/recentMatches'.format(member.dotaId)
+        try:
+            r = requests.get(mUrl, timeout=defaultTimeout)
+        except Exception as e:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'kale')
+            return False
+        matches = json.loads(r.text)
+        matchId = str(matches[int(n) - 1]['match_id'])
+        filePath = dotaPath + matchId + '.png'
+        if not os.path.exists(filePath):
+            try:
+                r = requests.get(url, timeout=2*defaultTimeout)
+            except Exception as e:
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'kale')
+                return False
+            matchId = r.content
+        if matchId == 0:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '暂无比赛数据')
+            return
+        matchCapture = matchId + '.png'
+        CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + str(CQImage('/dota/' + matchCapture)))
 
     def downloadCalcImg(url):
         logging.info(url)
@@ -523,9 +588,16 @@ class CQHandler(object):
         audioFilePath = 'Invoker/' + 'Invo_failure_' +  index + '.mp3'
         CQSDK.SendGroupMsg(fromGroup, str(CQRecord(audioFilePath)))
 
+    def haveCard(self, QQID, pool, index):
+        QQID = str(QQID)
+        if QQID in self.illustMap.keys():
+            if pool in self.illustMap[QQID].keys():
+                if index in self.illustMap[QQID][pool].keys():
+                    return True
+        return False
+
     def recordDraw(self, QQID, cards, rareCount, pool):
         QQID = str(QQID)
-        logging.info(QQID)
         for card in cards:
             logging.info(card.index, card.probability)
         if QQID not in self.illustMap.keys():
@@ -552,6 +624,9 @@ class CQHandler(object):
         QQID = str(QQID)
         if QQID not in self.illustMap.keys():
             return []
+        if pool not in self.illustMap[QQID].keys():
+            rareNums = len(self.cm.getPoolRareName(pool))
+            self.illustMap[QQID][pool] = {'rareCount': [0 for i in range(rareNums)], 'specailCards': []}
         if 'specailCards' not in self.illustMap[QQID][pool].keys():
             self.illustMap[QQID][pool]['specailCards'] = []
             return []
@@ -564,10 +639,13 @@ class CQHandler(object):
         return unlockedCards
 
     def drawQuery(self, fromGroup, QQID):
+        if fromGroup != groupID[0]:
+            return
         member = self.members[QQID]
         remainingDrawTimes = member.drawLimit - member.drawTimes
         todayInfo = '\n每日抽卡次数：' + str(member.drawLimit) + '\n今日已用次数：' + str(member.drawTimes) + '\n剩余可用次数：' + str(remainingDrawTimes)
         totalStat = ''
+        specailStat = ''
         QQID = str(QQID)
         if QQID in self.illustMap.keys():
             drawData = self.illustMap[QQID]
@@ -585,15 +663,28 @@ class CQHandler(object):
                 if pRareCount[maxRare] != 0:
                     totalStat += '\n{0}图鉴\n'.format(rareName[maxRare])
                 for (card, cdata) in pdata.items():
+                    logging.info(card)
+                    if card == 'specailCards' and len(cdata) > 0:
+                        logging.info("!!!")
+                        cdata.sort()
+                        specailStat = '\n你收集的道具卡有：\n'
+                        for sid in cdata:
+                            logging.info(sid)
+                            scard = self.cm.getCardByIndex(pool, sid)
+                            logging.info(scard.image)
+                            specailStat += str(CQImage(scard.image))
+                            logging.info(specailStat)
                     if card != 'rareCount' and card != 'specailCards':
                         logging.info(cdata)
                         if int(cdata['card']['rare']) == maxRare:
                             totalStat += str(CQImage(cdata['card']['image']))
-        CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + totalStat + todayInfo)
+        CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + totalStat + todayInfo + specailStat)
 
     def draw(self, fromGroup, QQID, para):
         limitFlag = 0
-        if fromGroup != groupID[0] and fromGroup == groupID[3]:
+        if fromGroup != groupID[0]:
+            return
+        if fromGroup == groupID[3]:
             limitFlag = 1
         else:
             member = self.members[QQID]
@@ -602,7 +693,7 @@ class CQHandler(object):
                 return
         para = para.lower()
         if 'x' in para:
-            logging.info("f1")
+            logging.info("ff1")
             index = para.rindex('x')
             key = para[0:index]
             times = para[index+1:]
@@ -619,10 +710,11 @@ class CQHandler(object):
             remainingDrawTimes = member.drawLimit - member.drawTimes
             if times > remainingDrawTimes:
                 times = remainingDrawTimes
-            logging.info("f2")
+            logging.info("ff2")
             unlockedCards = self.unlockedCardsQuery(fromGroup, QQID, key)
+            logging.info(unlockedCards)
             result, rareCount = self.cm.draw(key, times, unlockedCards)
-            logging.info("f3")
+            logging.info("ff3")
             if unlockedCards is None:
                 unlockedCards = []
             logging.info(unlockedCards)
@@ -633,6 +725,8 @@ class CQHandler(object):
             if result is not None:
                 retCards = ''
                 for card in result:
+                    if self.haveCard(QQID, key, card.index) and card.rare <= 1: 
+                        continue
                     retCards += str(CQImage(card.image))
                 poolRareName = self.cm.getPoolRareName(key)
                 retInfo = ''
@@ -683,6 +777,7 @@ class CQHandler(object):
 
     def getBfaceUrl(self, imageName):
         url = ''
+        if not os.path.exists(sourcePath + imageName + '.cqimg'): return url
         with open(sourcePath + imageName + '.cqimg', 'r+') as f:
             lineCount = 0
             for line in f:
@@ -716,13 +811,14 @@ class CQHandler(object):
         # image
         url = ''
         logging.info("f1")
+        logging.info(value.find('CQ:image'))
         if value.find('CQ:image') >= 0:
             imageName = value[value.index('=')+1:-1]
             logging.info(imageName)
             url = self.getBfaceUrl(imageName)
-            logging.info(url)
+            logging.info("???")
             self.downloadBface(url, imageName)
-            logging.info("f2")
+            logging.info("!!!")
         self.bfaceMap[key] = value
         try:
             CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '知道了!' + str(key) + '->' + value)
@@ -1176,6 +1272,10 @@ class CQHandler(object):
                     self.drawQuery(fromGroup, fromQQ)
                 elif cmd == '!spy':
                     msg='没有' #
+                elif cmd == '!dota':
+                    self.dota2Match(fromGroup, fromQQ, para)
+                elif cmd == '!bind':
+                    self.bindDotaAccount(fromGroup, fromQQ, para)
 
             
             logging.info("flag4")

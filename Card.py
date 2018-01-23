@@ -4,8 +4,6 @@ import random
 import math
 import json
 
-LatiaoPools = ['Summer17']
-
 class Card:
 
     def __init__(self, index, name, image, probability, rare, type):
@@ -199,6 +197,13 @@ class CardManager:
         key = self.findPool(pool)
         if key in self.cardsPools.keys():
             return self.cardsPools[key].getRewardCardByIndex(index)
+        else:
+            return None
+
+    def getCardByIndex(self, pool, index):
+        key = self.findPool(pool)
+        if key in self.cardsPools.keys():
+            return self.cardsPools[key].getCardByIndex(index)
         else:
             return None
 
