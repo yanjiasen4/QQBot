@@ -485,7 +485,6 @@ class CQHandler(object):
         if member.dotaId == '0':
             CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '请先绑定dota2 Id，使用指令：!bind <dota2 id>')
             return
-        url = 'http://localhost:7001/?id={0}&n={1}'.format(member.dotaId, n)
         CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '比赛数据图生成中......')
         mUrl = 'https://api.opendota.com/api/players/{0}/recentMatches'.format(member.dotaId)
         try:
@@ -496,7 +495,10 @@ class CQHandler(object):
         matches = json.loads(r.text)
         matchId = str(matches[int(n) - 1]['match_id'])
         filePath = dotaPath + matchId + '.png'
+        # if this match has not been requested
         if not os.path.exists(filePath):
+            # send request to dotamin server
+            url = 'http://localhost:7001/?id={0}&n={1}'.format(member.dotaId, n)
             try:
                 r = requests.get(url, timeout=2*defaultTimeout)
             except Exception as e:
