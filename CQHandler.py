@@ -469,7 +469,7 @@ class CQHandler(object):
             return False
         playerData = json.loads(r.text)
         logging.info(playerData['tracked_until'])
-        if playerData['tracked_until'] is not None:
+        if playerData is not None and 'profile' in playerData:
             member = self.members[QQID]
             member.dotaId = did
             logging.info(member.dotaId)
