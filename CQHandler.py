@@ -16,7 +16,7 @@ logging.basicConfig(
     filemode    = 'w+'
 )
 
-groupID = [79177174, 487308083, 259641925, 484271101, 649028414, 305875334, 117057359, 88164807]
+groupID = []
 yande_url = 'https://yande.re/'
 danbooru_url = 'http://danbooru.donmai.us/'
 str_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.json')
