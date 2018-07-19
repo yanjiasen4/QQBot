@@ -84,7 +84,7 @@ sourcePath = 'C:/Users/Administrator/Documents/CQP/酷Q Pro/data/image/'
 audioPath = 'C:/Users/Administrator/Documents/CQP/酷Q Pro/data/record/'
 imagePath = 'C:/Users/Administrator/Documents/CQP/酷Q Pro/data/image/comic/'
 dotaPath = 'C:/Users/Administrator/Documents/CQP/酷Q Pro/data/image/dota/'
-recogPath = 'C:/Users/Administrator/Deocuments/CQP/酷Q Pro/data/image/recog'
+recogPath = 'C:/Users/Administrator/Documents/CQP/酷Q Pro/data/image/recog/'
 specAudioPath = 'special/'
 
 helpInfo = ''
@@ -548,27 +548,22 @@ class CQHandler(object):
         pass
 
     def recognize(self, fromGroup, QQID, para):
-        logging.info(para)
         value = para
         if value == '':
-            logging.info("???")
-            # self.learnBuffer[QQID] = key
             return
         # image
         url = ''
-        logging.info("f1")
-        logging.info(value.find('CQ:image'))
         if value.find('CQ:image') >= 0:
-            imageName = value[value.index('=')+1:-1]
-            logging.info(imageName)
+            imageName = value[value.index('=')+1:value.index(']')]
             url = self.getBfaceUrl(imageName)
-            logging.info("???")
             self.downloadRecog(url, imageName)
-            logging.info("!!!")
+        else:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '改指令只支持以图搜图')
+            return
         msg, ret = recognizeImage(recogPath + imageName)
         retContent = ''
         if ret is not None:
-            retContent = '图源:{0}\n作品标题:{1}\n作者:{2}\n作品编号:{3}\n链接:{4}\n相似度:{5}'.format(ret[0], ret[1], ret[2], ret[3], ret[4], ret[5])
+            retContent = '图源: {0}\n作品标题: {1}\n作者: {2}\n作品编号: {3}\n链接: {4}\n相似度: {5}'.format(ret[0], ret[1], ret[2], ret[3], ret[4], ret[5])
         else:
             retContent = '查询失败'
         try:
@@ -584,14 +579,10 @@ class CQHandler(object):
         return sum
 
     def invoker(self, fromGroup, QQID, para=None):
-        logging.info("invoke")
         path = 'Invoker/'
-        logging.info(para)
         audioPrefix = path + 'Invo_ability_'
-        logging.info(audioPrefix)
         audioFilePath = ''
         skillName = ''
-        logging.info(para)
         if para is None:
             skillIndex = str(invokerSkillIndex[0, random.randint(0, len(invokerSkillIndex) - 1)])
             skill = self.invokerSkill[skillIndex]
@@ -642,22 +633,16 @@ class CQHandler(object):
             logging.info(card.index, card.probability)
         if QQID not in self.illustMap.keys():
             self.illustMap[QQID] = {}
-        logging.info("f1")
         if pool not in self.illustMap[QQID].keys():
             self.illustMap[QQID][pool] = {'rareCount' : [0 for i in range(len(rareCount))], 'specailCards': []}
-        logging.info("f2")
-        logging.info(rareCount)
         for i in range(len(rareCount)):
             self.illustMap[QQID][pool]['rareCount'][i] += rareCount[i]
-        logging.info("???")
         for card in cards:
-            logging.info(card.index,card.probability)
             if card.name not in self.illustMap[QQID][pool].keys():
                 self.illustMap[QQID][pool][card.index] = {'card': card.__dict__, 'count': 1}
             else:
                 self.illustMap[QQID][pool][card.name]['count'] += 1
             if card.type == 1 and card.index not in self.illustMap[QQID][pool]['specailCards']:
-                logging.info(self.illustMap[QQID][pool])
                 self.illustMap[QQID][pool]['specailCards'].append(card.index)
 
     def unlockedCardsQuery(self, fromGroup, QQID, pool):
@@ -673,9 +658,7 @@ class CQHandler(object):
         specailCards = self.illustMap[QQID][pool]['specailCards']
         if specailCards is None or len(specailCards) == 0:
             return []
-        logging.info("ss")
         unlockedCards = self.cm.getUnlockedCards(pool, specailCards)
-        logging.info(unlockedCards)
         return unlockedCards
 
     def drawQuery(self, fromGroup, QQID):
@@ -689,7 +672,6 @@ class CQHandler(object):
         QQID = str(QQID)
         if QQID in self.illustMap.keys():
             drawData = self.illustMap[QQID]
-            logging.info("f1")
             for (pool,pdata) in drawData.items():
                 rareName = self.cm.getPoolRareName(pool)
                 maxRare = len(rareName)-1
@@ -703,19 +685,13 @@ class CQHandler(object):
                 if pRareCount[maxRare] != 0:
                     totalStat += '\n{0}图鉴\n'.format(rareName[maxRare])
                 for (card, cdata) in pdata.items():
-                    logging.info(card)
                     if card == 'specailCards' and len(cdata) > 0:
-                        logging.info("!!!")
                         cdata.sort()
                         specailStat = '\n你收集的道具卡有：\n'
                         for sid in cdata:
-                            logging.info(sid)
                             scard = self.cm.getCardByIndex(pool, sid)
-                            logging.info(scard.image)
                             specailStat += str(CQImage(scard.image))
-                            logging.info(specailStat)
                     if card != 'rareCount' and card != 'specailCards':
-                        logging.info(cdata)
                         if int(cdata['card']['rare']) == maxRare:
                             totalStat += str(CQImage(cdata['card']['image']))
         CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + totalStat + todayInfo + specailStat)
@@ -750,18 +726,13 @@ class CQHandler(object):
             remainingDrawTimes = member.drawLimit - member.drawTimes
             if times > remainingDrawTimes:
                 times = remainingDrawTimes
-            logging.info("ff2")
             unlockedCards = self.unlockedCardsQuery(fromGroup, QQID, key)
-            logging.info(unlockedCards)
             result, rareCount = self.cm.draw(key, times, unlockedCards)
-            logging.info("ff3")
             if unlockedCards is None:
                 unlockedCards = []
-            logging.info(unlockedCards)
             debugInfo = ''
             for card in result:
                 debugInfo += card.index + ':' + str(card.probability) + '\n'
-            logging.info(debugInfo)
             if result is not None:
                 retCards = ''
                 for card in result:
@@ -773,23 +744,14 @@ class CQHandler(object):
                 for i in range(len(rareCount)):
                     if rareCount[i] != 0:
                         retInfo += '{0}: {1}张 | '.format(poolRareName[i], rareCount[i])
-                logging.info("f3")
                 self.recordDraw(QQID, result, rareCount, key)
-                logging.info("f4")
                 # if unlocked new reward card, report
                 newUnlockedCards = self.unlockedCardsQuery(fromGroup, QQID, key)
-                logging.info(len(newUnlockedCards))
-                logging.info(len(unlockedCards))
                 if len(newUnlockedCards) > len(unlockedCards):
-                    logging.info("FFF")
                     for index in newUnlockedCards:
                         if index not in unlockedCards:
-                            logging.info(index)
-                            logging.info(self.cm.getRewardCardByIndex(key, index))
                             card = self.cm.getRewardCardByIndex(key, index)
-                            logging.info(card)
                             retInfo += '\n你解锁了{0}卡片{1}'.format(poolRareName[card.rare], card.name)
-                logging.info(retInfo)
                 if limitFlag == 0:
                     member.drawTimes += times
                     remainingDrawTimes = member.drawLimit - member.drawTimes
@@ -800,7 +762,6 @@ class CQHandler(object):
                 else:
                     retInfo += '\n你可以随便抽'
 
-
                 CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '\n' + retCards + '\n' + retInfo)
             else:
                 CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '你的老婆神秘失踪了')      
@@ -810,8 +771,7 @@ class CQHandler(object):
             r = requests.get(url, timeout=defaultTimeout)
         except Exception as e:
             return False
-        logging.info(recogPath + name)
-        open(sourcePath + name, 'wb').write(r.content)
+        open(recogPath + name, 'wb').write(r.content)
         return True
 
     def downloadBface(self, url, name):
@@ -819,7 +779,6 @@ class CQHandler(object):
             r = requests.get(url, timeout=defaultTimeout)
         except Exception as e:
             return False
-        logging.info(sourcePath + name)
         open(sourcePath + name, 'wb').write(r.content)
         return True
 
@@ -850,7 +809,6 @@ class CQHandler(object):
                 return
         value = results[1]
         if value == '':
-            logging.info("???")
             self.learnBuffer[QQID] = key
             return
         if value.find('\n') == 1 or len(value) > 500:
@@ -858,15 +816,11 @@ class CQHandler(object):
             return
         # image
         url = ''
-        logging.info("f1")
-        logging.info(value.find('CQ:image'))
         if value.find('CQ:image') >= 0:
             imageName = value[value.index('=')+1:-1]
             logging.info(imageName)
             url = self.getBfaceUrl(imageName)
-            logging.info("???")
             self.downloadBface(url, imageName)
-            logging.info("!!!")
         self.bfaceMap[key] = value
         try:
             CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '知道了!' + str(key) + '->' + value)
@@ -927,7 +881,6 @@ class CQHandler(object):
             nums = re.findall(r"\d+", para)
             if nums:
                 max = int(nums[0])
-        logging.info(max)
         result = random.randint(0, max)
         res_normlize = 100 * result / max
         member = self.members[QQID]
@@ -946,7 +899,6 @@ class CQHandler(object):
             nums = re.findall(r"\d+", para)
             if nums:
                 max = int(nums[0])
-        logging.info(max)
         result = random.randint(0, max)
         res_normlize = 100 * result / max
         member = self.members[QQID]
@@ -963,7 +915,6 @@ class CQHandler(object):
         if para not in audioTable.keys():
             return
         audioFile = '/' + specAudioPath + audioTable[para]
-        logging.info(audioFile)
         try:
             CQSDK.SendGroupMsg(fromGroup, str(CQRecord(audioFile)))
         except Exception as e:
@@ -1105,7 +1056,6 @@ class CQHandler(object):
             return False
         image_url = danbooru_url + image_url
         filename = str(id) + '_danbooro.' + extension
-        logging.info(image_url)
         filepath = imagePath + filename
         if not os.path.exists(filepath):
             try:
@@ -1275,7 +1225,9 @@ class CQHandler(object):
             if result:
                 cmd = result[0]
                 logging.info(cmd)
-                para = msg[len(cmd):]
+                para = ''
+                if len(cmd) < len(msg):
+                    para = msg[len(cmd):]
                 if len(para) > 0:
                     while para[0] == ' ':
                         para = para[1:]

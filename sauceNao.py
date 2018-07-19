@@ -1,7 +1,7 @@
 # -*- coding:gbk -*-
 
 api_key = "e811b8f51ef167512c930353237c1773adb33d81"
-minsim = '50!'
+minsim = '80!'
 
 import requests
 import json
@@ -32,28 +32,30 @@ db_bitmask = int(index_yandere+index_nijie+index_drawr+index_danbooru+index_seig
 
 
 def recognizeImage(filePath):
-    url = 'http://saucenao.com/search.php?output_type=2&numres=1&minsim=' + \
+    url = 'https://saucenao.com/search.php?output_type=2&numres=1&minsim=' + \
         minsim+'&dbmask='+str(db_bitmask)+'&api_key='+api_key
     image = open(filePath, 'rb')
-    files = {'file': (filePath, image.read())}
-    image.close()
+    files = {'file': (filePath.split('/')[-1], image.read())}
+    #image.close()
 
     processResults = True
     msg = ''
-    ret = ''
+    ret = None
     while True:
-        r = requests.post(url, files=files)
+        try:
+            r = requests.post(url, files=files, timeout=5)
+        except Exception as e:
+            msg = 'Network exception...'
+            return (msg, '')
         if r.status_code != 200:
             print (r.status_code)
             if r.status_code == 403:
                 msg = 'Incorrect or Invalid API Key! Please Edit Script to Configure...'
-                return msg
+                return (msg, '')
             else:
                 time.sleep(10)
         else:
-            results = json.JSONDecoder(
-                object_pairs_hook=OrderedDict).decode(r.text)
-            print results
+            results = json.loads(r.text)
             if int(results['header']['user_id']) > 0:
                 # api responded
                 # print 'Remaining Searches 30s|24h: ' + \
@@ -78,6 +80,7 @@ def recognizeImage(filePath):
                         processResults = False
                         time.sleep(10)
                         break
+    image.close()
 
     if processResults:
         # print(results)
@@ -88,6 +91,7 @@ def recognizeImage(filePath):
             if similarity > float(results['header']['minimum_similarity']):
                 print('hit! '+str(results['results']
                       [0]['header']['similarity']))
+                msg = '找到相似图片!'
 
                 # get vars to use
                 service_name = ''
@@ -97,10 +101,10 @@ def recognizeImage(filePath):
                 page_string = ''
                 illust_title = ''
                 illust_url = ''
-                page_match = re.search(
-                    '(_p[\d]+)\.', results['results'][0]['header']['thumbnail'])
-                if page_match:
-                    page_string = page_match.group(1)
+                # page_match = re.search(
+                #     '(_p[\d]+)\.', results['results'][0]['header']['thumbnail'])
+                # if page_match:
+                #     page_string = page_match.group(1)
 
                 if index_id == 5 or index_id == 6:
                     # 5->pixiv 6->pixiv historical
@@ -113,7 +117,7 @@ def recognizeImage(filePath):
                 elif index_id == 8:
                     # 8->nico nico seiga
                     service_name = 'seiga'
-                    illust_id = results['results'][0]['data']['pixiv_id']
+                    illust_id = results['results'][0]['data']['seiga_id']
                     illust_url = results['results'][0]['data']['ext_urls'][0]
                     illust_title = results['results'][0]['data']['title']
                     member_id = results['results'][0]['data']['member_id']
@@ -121,7 +125,7 @@ def recognizeImage(filePath):
                 elif index_id == 10:
                     # 10->drawr
                     service_name = 'drawr'
-                    illust_id = results['results'][0]['data']['pixiv_id']
+                    illust_id = results['results'][0]['data']['drawr_id']
                     illust_url = results['results'][0]['data']['ext_urls'][0]
                     illust_title = results['results'][0]['data']['title']
                     member_id = results['results'][0]['data']['member_id']
@@ -129,7 +133,7 @@ def recognizeImage(filePath):
                 elif index_id == 11:
                     # 11->nijie
                     service_name = 'nijie'
-                    illust_id = results['results'][0]['data']['pixiv_id']
+                    illust_id = results['results'][0]['data']['nijie_id']
                     illust_url = results['results'][0]['data']['ext_urls'][0]
                     illust_title = results['results'][0]['data']['title']
                     member_id = results['results'][0]['data']['member_id']
@@ -144,13 +148,14 @@ def recognizeImage(filePath):
                 else:
                     # unknown
                     print('Unhandled Index! Exiting...')
-                    return
+                    return ('error', None)
                 
                 ret = (service_name, illust_title, member_name, illust_id, illust_url, similarity)
+            else:
+                msg = '结果相似度过低'
     return (msg, ret)
 
-
 if __name__ == '__main__':
-    msg, ret = recognizeImage('test1.jpg')
+    msg, ret = recognizeImage('C:/Users/sjtu/Documents/QQBot/test1.jpg')
     retContent = '图源:{0}\n作品标题:{1}\n作者:{2}\n作品编号:{3}\n链接:{4}\n相似度:{5}'.format(ret[0], ret[1], ret[2], ret[3], ret[4], ret[5]) 
     print msg + '\n' + retContent
