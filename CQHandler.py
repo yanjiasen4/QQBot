@@ -16,7 +16,7 @@ logging.basicConfig(
     filemode    = 'w+'
 )
 
-groupID = []
+groupID = [79177174, 487308083, 259641925, 484271101, 649028414, 305875334, 117057359, 88164807]
 yande_url = 'https://yande.re/'
 danbooru_url = 'http://danbooru.donmai.us/'
 str_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.json')
@@ -37,6 +37,7 @@ from CQGroupMemberInfo import CQGroupMemberInfo
 from CQMessage import CQAt, CQImage, CQRecord, CQShare
 
 from Card import CardManager
+from sauceNao import recognizeImage
 
 from pypinyin import pinyin, lazy_pinyin
 import pypinyin
@@ -49,33 +50,41 @@ import re
 import random
 
 expTable = [100, 300, 800, 1500, 3800, 9000, 22000, 48000, 90000, 140000, 200000, 450000]
-levelTable = ["æ·¬ä½“", "ç‚¼æ°”", "ç­‘åŸº", "é‡‘ä¸¹", "è¾Ÿè°·", "å…ƒå©´", "æ´è™š", "åˆ†ç¥", "å¤§ä¹˜", "æ¸¡åŠ«", "ä»™äºº"]
-subLevelTable = ["ä¸€å±‚", "äºŒå±‚", "ä¸‰å±‚", "å››å±‚", "äº”å±‚", "å…­å±‚", "ä¸ƒå±‚", "å…«å±‚", "ä¹å±‚", "åœ†æ»¡"]
+levelTable = ["´ãÌå", "Á¶Æø", "Öş»ù", "½ğµ¤", "±Ù¹È", "ÔªÓ¤", "¶´Ğé", "·ÖÉñ", "´ó³Ë", "¶É½Ù", "ÏÉÈË"]
+subLevelTable = ["Ò»²ã", "¶ş²ã", "Èı²ã", "ËÄ²ã", "Îå²ã", "Áù²ã", "Æß²ã", "°Ë²ã", "¾Å²ã", "Ô²Âú"]
 drawLimitTable = [2,6,10,15,20,25,30,36,42,55,70,100]
 invokerSkillIndex = [0, 3, 5, 7, 9, 11, 13, 15, 19, 21, 27]
 audioTable = {
     'aya': 'Chatwheel_ay_ay_ay.wav',
-    'å“å‘€å‘€å‘€å‘€': 'Chatwheel_ay_ay_ay.wav',
+    '°¥Ñ½Ñ½Ñ½Ñ½': 'Chatwheel_ay_ay_ay.wav',
     'ehtogg': 'Chatwheel_ehto_g_g.wav',
-    'çˆ±å’‹ç»™ç»™': 'Chatwheel_ehto_g_g.wav',
+    '°®Õ¦¸ø¸ø': 'Chatwheel_ehto_g_g.wav',
     'patience from zhou': 'Chatwheel_patience.wav',
-    'è€å¿ƒ': 'Chatwheel_patience.wav',
-    'æå§': 'Chatwheel_eto_prosto_netchto.wav',
+    'ÄÍĞÄ': 'Chatwheel_patience.wav',
+  'ÊÜËÀ': 'cfcss.wav',  'Äó°É': 'Chatwheel_eto_prosto_netchto.wav',
     'brutal': 'Chatwheel_brutal.wav',
-    'é‡æ€§': 'Chatwheel_brutal.wav',
-    'åŠ æ²¹': 'Chatwheel_jia_you.wav',
-    'ç©ä¸äº†å•¦': 'Chatwheel_wan_bu_liao_la.wav',
-    'å¤©ç«': 'Chatwheel_tian_huo.wav',
-    'èµ°å¥½ä¸é€': 'Chatwheel_zou_hao_bu_song.wav',
-    'ç ´ä¸¤è·¯æ›´å¥½æ‰“': 'Chatwheel_po_liang_lu.wav',
-    'æ²¹è…»å¨å°”æ–¯': 'Chatwheel_universe.wav',
-    'universe': 'Chatwheel_universe.wav'
+    'Ò°ĞÔ': 'Chatwheel_brutal.wav',
+    '¼ÓÓÍ': 'Chatwheel_jia_you.wav',
+    'Íæ²»ÁËÀ²': 'Chatwheel_wan_bu_liao_la.wav',
+    'Ìì»ğ': 'Chatwheel_tian_huo.wav',
+    '×ßºÃ²»ËÍ': 'Chatwheel_zou_hao_bu_song.wav',
+    'ÆÆÁ½Â·¸üºÃ´ò': 'Chatwheel_po_liang_lu.wav',
+    'ÓÍÄåÍş¶ûË¹': 'Chatwheel_universe.wav',
+    'universe': 'Chatwheel_universe.wav',
+    '¶ÓÓÑÄØ': 'Chat_wheel_2018_duiyou_ne.mp3',
+    '¸ß¸»Ë§': 'Chat_wheel_2018_gao_fu_shuai.mp3',
+    'ÄãÆø²»Æø': 'Chat_wheel_2018_ni_qi_bu_qi.mp3',
+    'ºùÂ«ÍŞ': 'Chat_wheel_2018_hu_lu_wa.mp3',
+    'oyoyb': 'Chat_wheel_2018_oy_oy_bezhat.mp3',
+    'oyoyoy': 'Chat_wheel_2018_oy_oy_oy.mp3',
+    'tada': 'Chat_wheel_2018_ta_daaaa.mp3'
 }
 
-sourcePath = 'F:/é…·Q Pro/data/image/'
-audioPath = 'F:/é…·Q Pro/data/record/'
-imagePath = 'F:/é…·Q Pro/data/image/comic/'
-dotaPath = 'F:/é…·Q Pro/data/image/dota/'
+sourcePath = 'C:/Users/Administrator/Documents/CQP/¿áQ Pro/data/image/'
+audioPath = 'C:/Users/Administrator/Documents/CQP/¿áQ Pro/data/record/'
+imagePath = 'C:/Users/Administrator/Documents/CQP/¿áQ Pro/data/image/comic/'
+dotaPath = 'C:/Users/Administrator/Documents/CQP/¿áQ Pro/data/image/dota/'
+recogPath = 'C:/Users/Administrator/Deocuments/CQP/¿áQ Pro/data/image/recog'
 specAudioPath = 'special/'
 
 helpInfo = ''
@@ -192,7 +201,7 @@ class CQHandler(object):
 
     def __init__(self):
         logging.info('__init__')
-        self._key_regex = re.compile('^.xx|!save|!idol|!drive|!rank|!roll|!learn|!forget|!list|!tag|!banword|!calc|!invoke|!draw|!check|!dota|!bind')
+        self._key_regex = re.compile('^.xx|!save|!idol|!drive|!rank|!roll|!learn|!forget|!list|!tag|!banword|!calc|!invoke|!draw|!check|!dota|!bind|!search')
         self.keywords = []
         self.banwords = []
         self._data_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'xx.data')
@@ -422,11 +431,11 @@ class CQHandler(object):
         if QQID in self.adminList:
             return True
         else:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ä½ æ— æƒè¿›è¡Œæ­¤æ“ä½œ' )
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÄãÎŞÈ¨½øĞĞ´Ë²Ù×÷' )
             return False
 
     def rank(self, fromGroup, limit=None):
-        content = '-----------------------è¾£æ¡æ¦œ-----------------------\n'
+        content = '-----------------------À±Ìõ°ñ-----------------------\n'
         members = sorted(self.members.items(), lambda x, y: cmp(x[1], y[1]), reverse=True)
         listNum = 10
         if limit is not None and str.isdigit(limit):
@@ -452,20 +461,20 @@ class CQHandler(object):
             logging.info(value)
             self.banwords.append(value)
             try:
-                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + "çŸ¥é“äº†ï¼Œæˆ‘ä¼šæ— è§†" + str(word) + "çš„")
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + "ÖªµÀÁË£¬ÎÒ»áÎŞÊÓ" + str(word) + "µÄ")
             except Exception as e:
                 logging.exception(e)
 
     def bindDotaAccount(self, fromGroup, QQID, did):
         if did is None or did == '' or not did.isdigit():
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'è¯·è¾“å…¥æ­£ç¡®çš„dota2 id')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÇëÊäÈëÕıÈ·µÄdota2 id')
             return
         url = 'https://api.opendota.com/api/players/{0}'.format(did)
         logging.info('sending request to {0}'.format(url))
         try:
             r = requests.get(url, timeout=defaultTimeout)
         except Exception as e:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ç»‘å®šå‡ºé”™ï¼Œè¯·é‡è¯•')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '°ó¶¨³ö´í£¬ÇëÖØÊÔ')
             return False
         playerData = json.loads(r.text)
         logging.info(playerData['tracked_until'])
@@ -473,19 +482,19 @@ class CQHandler(object):
             member = self.members[QQID]
             member.dotaId = did
             logging.info(member.dotaId)
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ç»‘å®šæˆåŠŸ')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '°ó¶¨³É¹¦')
         else:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ç»‘å®šå¤±è´¥ï¼Œè¯·è¾“å…¥æ­£ç¡®çš„ID')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '°ó¶¨Ê§°Ü£¬ÇëÊäÈëÕıÈ·µÄID')
 
     def dota2Match(self, fromGroup, QQID, n):
         if int(n) > 20:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'åªèƒ½æŸ¥è¯¢æœ€å¤šæœ€è¿‘20åœºæ¯”èµ›æ•°æ®')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'Ö»ÄÜ²éÑ¯×î¶à×î½ü20³¡±ÈÈüÊı¾İ')
             return
         member = self.members[QQID]
         if member.dotaId == '0':
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'è¯·å…ˆç»‘å®šdota2 Idï¼Œä½¿ç”¨æŒ‡ä»¤ï¼š!bind <dota2 id>')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÇëÏÈ°ó¶¨dota2 Id£¬Ê¹ÓÃÖ¸Áî£º!bind <dota2 id>')
             return
-        CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'æ¯”èµ›æ•°æ®å›¾ç”Ÿæˆä¸­......')
+        CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '±ÈÈüÊı¾İÍ¼Éú³ÉÖĞ......')
         mUrl = 'https://api.opendota.com/api/players/{0}/recentMatches'.format(member.dotaId)
         try:
             r = requests.get(mUrl, timeout=defaultTimeout)
@@ -506,12 +515,12 @@ class CQHandler(object):
                 return False
             matchId = r.content
         if matchId == 0:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'æš‚æ— æ¯”èµ›æ•°æ®')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÔİÎŞ±ÈÈüÊı¾İ')
             return
         matchCapture = matchId + '.png'
         CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + str(CQImage('/dota/' + matchCapture)))
 
-    def downloadCalcImg(url):
+    def downloadCalcImg(self, url):
         logging.info(url)
         r = requests.get(str(url))
         logging.info("yes")
@@ -523,7 +532,7 @@ class CQHandler(object):
         wapr = WolframAlphaResult(inpt)
         result, img = wapr.calcResult()
         if result:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ç»“æœæ˜¯ï¼š' + str(result))
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '½á¹ûÊÇ£º' + str(result))
             if img:
                 logging.info("???")
                 r = requests.get(str(img))
@@ -533,10 +542,39 @@ class CQHandler(object):
                 open(filename, "wb").write(r.content)
                 CQSDK.SendGroupMsg(fromGroup, str(CQImage('calc.gif')))
         else:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'è¾“å…¥æœ‰è¯¯')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÊäÈëÓĞÎó')
 
     def emojiGeneration(self, fromGroup, QQID, para):
         pass
+
+    def recognize(self, fromGroup, QQID, para):
+        logging.info(para)
+        value = para
+        if value == '':
+            logging.info("???")
+            # self.learnBuffer[QQID] = key
+            return
+        # image
+        url = ''
+        logging.info("f1")
+        logging.info(value.find('CQ:image'))
+        if value.find('CQ:image') >= 0:
+            imageName = value[value.index('=')+1:-1]
+            logging.info(imageName)
+            url = self.getBfaceUrl(imageName)
+            logging.info("???")
+            self.downloadRecog(url, imageName)
+            logging.info("!!!")
+        msg, ret = recognizeImage(recogPath + imageName)
+        retContent = ''
+        if ret is not None:
+            retContent = 'Í¼Ô´:{0}\n×÷Æ·±êÌâ:{1}\n×÷Õß:{2}\n×÷Æ·±àºÅ:{3}\nÁ´½Ó:{4}\nÏàËÆ¶È:{5}'.format(ret[0], ret[1], ret[2], ret[3], ret[4], ret[5])
+        else:
+            retContent = '²éÑ¯Ê§°Ü'
+        try:
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + msg + '\n' + retContent)
+        except Exception as e:
+            logging.exception(e)
 
     def calcInvokerSkill(self, inpt):
         sum = 0
@@ -563,7 +601,7 @@ class CQHandler(object):
             audioFilePath = audioPrefix + skill['skillName'] + '_' + audioPostfix + '.mp3'
         else:
             if len(para) != 3:
-                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'æ–½æ³•å‡ºç°é”™è¯¯ï¼Ÿ')
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'Ê©·¨³öÏÖ´íÎó£¿')
                 self.invokerFail(fromGroup)
                 return
             regix = '^[qwe]{0,3}$'
@@ -576,11 +614,11 @@ class CQHandler(object):
                 skillName = skill['skillName']
                 audioFilePath = audioPrefix + skill['skillName'] + '_' + audioPostfix + '.mp3'
             else:
-                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'å’’è¯­è®°æ··äº†')
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÖäÓï¼Ç»ìÁË')
                 self.invokerFail(fromGroup)
                 return
         try:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'é‡Šæ”¾äº†' + skillName)
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÊÍ·ÅÁË' + skillName)
             CQSDK.SendGroupMsg(fromGroup, str(CQRecord(audioFilePath)))
         except Exception as e:
             logging.exception(e)
@@ -645,7 +683,7 @@ class CQHandler(object):
             return
         member = self.members[QQID]
         remainingDrawTimes = member.drawLimit - member.drawTimes
-        todayInfo = '\næ¯æ—¥æŠ½å¡æ¬¡æ•°ï¼š' + str(member.drawLimit) + '\nä»Šæ—¥å·²ç”¨æ¬¡æ•°ï¼š' + str(member.drawTimes) + '\nå‰©ä½™å¯ç”¨æ¬¡æ•°ï¼š' + str(remainingDrawTimes)
+        todayInfo = '\nÃ¿ÈÕ³é¿¨´ÎÊı£º' + str(member.drawLimit) + '\n½ñÈÕÒÑÓÃ´ÎÊı£º' + str(member.drawTimes) + '\nÊ£Óà¿ÉÓÃ´ÎÊı£º' + str(remainingDrawTimes)
         totalStat = ''
         specailStat = ''
         QQID = str(QQID)
@@ -663,13 +701,13 @@ class CQHandler(object):
                 for i in range(len(pRareCount)):
                     totalStat += '{0}:{1}/{2}% '.format(rareName[i], pRareCount[i], round(float(pRareCount[i])/totalCount*100,3))
                 if pRareCount[maxRare] != 0:
-                    totalStat += '\n{0}å›¾é‰´\n'.format(rareName[maxRare])
+                    totalStat += '\n{0}Í¼¼ø\n'.format(rareName[maxRare])
                 for (card, cdata) in pdata.items():
                     logging.info(card)
                     if card == 'specailCards' and len(cdata) > 0:
                         logging.info("!!!")
                         cdata.sort()
-                        specailStat = '\nä½ æ”¶é›†çš„é“å…·å¡æœ‰ï¼š\n'
+                        specailStat = '\nÄãÊÕ¼¯µÄµÀ¾ß¿¨ÓĞ£º\n'
                         for sid in cdata:
                             logging.info(sid)
                             scard = self.cm.getCardByIndex(pool, sid)
@@ -691,7 +729,7 @@ class CQHandler(object):
         else:
             member = self.members[QQID]
             if member.drawTimes >= member.drawLimit:
-                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ä¸æ°ªé‡‘è¿˜æƒ³æŠ½å¡ï¼Ÿ')
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '²»ë´½ğ»¹Ïë³é¿¨£¿')
                 return
         para = para.lower()
         if 'x' in para:
@@ -701,10 +739,10 @@ class CQHandler(object):
             times = para[index+1:]
             key = self.cm.findPool(key)
             if key is None:
-                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'æ²¡æœ‰æ­¤å¡æ± ' + str(key))
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'Ã»ÓĞ´Ë¿¨³Ø' + str(key))
                 return
             if not times.isdigit() or int(times) <= 0:
-                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'æŠ½å¡æ¬¡æ•°æœ‰è¯¯')
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '³é¿¨´ÎÊıÓĞÎó')
                 return
             times = int(times)
             if times > 10:
@@ -734,7 +772,7 @@ class CQHandler(object):
                 retInfo = ''
                 for i in range(len(rareCount)):
                     if rareCount[i] != 0:
-                        retInfo += '{0}: {1}å¼  | '.format(poolRareName[i], rareCount[i])
+                        retInfo += '{0}: {1}ÕÅ | '.format(poolRareName[i], rareCount[i])
                 logging.info("f3")
                 self.recordDraw(QQID, result, rareCount, key)
                 logging.info("f4")
@@ -750,23 +788,31 @@ class CQHandler(object):
                             logging.info(self.cm.getRewardCardByIndex(key, index))
                             card = self.cm.getRewardCardByIndex(key, index)
                             logging.info(card)
-                            retInfo += '\nä½ è§£é”äº†{0}å¡ç‰‡{1}'.format(poolRareName[card.rare], card.name)
+                            retInfo += '\nÄã½âËøÁË{0}¿¨Æ¬{1}'.format(poolRareName[card.rare], card.name)
                 logging.info(retInfo)
                 if limitFlag == 0:
                     member.drawTimes += times
                     remainingDrawTimes = member.drawLimit - member.drawTimes
                     if remainingDrawTimes == 0:
-                        retInfo += '\nä½ ä»Šæ—¥çš„æŠ½å¡æ¬¡æ•°å·²ç»ç”¨å®Œ'
+                        retInfo += '\nÄã½ñÈÕµÄ³é¿¨´ÎÊıÒÑ¾­ÓÃÍê'
                     else:
-                        retInfo += '\nä½ ä»Šæ—¥è¿˜æœ‰' + str(remainingDrawTimes) + 'æ¬¡æŠ½å¡æœºä¼š'
+                        retInfo += '\nÄã½ñÈÕ»¹ÓĞ' + str(remainingDrawTimes) + '´Î³é¿¨»ú»á'
                 else:
-                    retInfo += '\nä½ å¯ä»¥éšä¾¿æŠ½'
+                    retInfo += '\nÄã¿ÉÒÔËæ±ã³é'
 
 
                 CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + '\n' + retCards + '\n' + retInfo)
             else:
-                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ä½ çš„è€å©†ç¥ç§˜å¤±è¸ªäº†')
-                
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÄãµÄÀÏÆÅÉñÃØÊ§×ÙÁË')      
+
+    def downloadRecog(self, url, name):
+        try:
+            r = requests.get(url, timeout=defaultTimeout)
+        except Exception as e:
+            return False
+        logging.info(recogPath + name)
+        open(sourcePath + name, 'wb').write(r.content)
+        return True
 
     def downloadBface(self, url, name):
         try:
@@ -797,7 +843,7 @@ class CQHandler(object):
         results = para.split('#')
         key = results[0]
         if self.check_keywords(key):
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'è®¨åŒï¼Œç¾¤ä¸»å¨˜ä¸å­¦%>_<%')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÌÖÑá£¬ÈºÖ÷Äï²»Ñ§%>_<%')
             return
         if self.bfaceMap.has_key(key):
             if self.authority(fromGroup, QQID) == False:
@@ -808,7 +854,7 @@ class CQHandler(object):
             self.learnBuffer[QQID] = key
             return
         if value.find('\n') == 1 or len(value) > 500:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'è¿™ä¸ªå¤ªéš¾äº†ï¼Œç¾¤ä¸»å¨˜å­¦ä¸ä¼šT_T')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'Õâ¸öÌ«ÄÑÁË£¬ÈºÖ÷ÄïÑ§²»»áT_T')
             return
         # image
         url = ''
@@ -823,7 +869,7 @@ class CQHandler(object):
             logging.info("!!!")
         self.bfaceMap[key] = value
         try:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'çŸ¥é“äº†!' + str(key) + '->' + value)
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÖªµÀÁË!' + str(key) + '->' + value)
         except Exception as e:
             logging.exception(e)
 
@@ -831,7 +877,7 @@ class CQHandler(object):
         if value is None or value == '':
             return
         if value.find('\n') == 1 or len(value) > 500:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'è¿™ä¸ªå¤ªéš¾äº†ï¼Œç¾¤ä¸»å¨˜å­¦ä¸ä¼šT_T')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'Õâ¸öÌ«ÄÑÁË£¬ÈºÖ÷ÄïÑ§²»»áT_T')
             return
         # image
         url = ''
@@ -843,7 +889,7 @@ class CQHandler(object):
         self.bfaceMap[key] = value
         del self.learnBuffer[QQID]
         try:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'çŸ¥é“äº†!' + str(key) + '->' + value)
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÖªµÀÁË!' + str(key) + '->' + value)
         except Exception as e:
             logging.exception(e)
 
@@ -855,9 +901,9 @@ class CQHandler(object):
         key = str(para)
         if self.bfaceMap.has_key(key):
             del self.bfaceMap[key]
-            retMsg = str(CQAt(QQID)) + str(key) + 'ä»£è¡¨çš„æ˜¯ä»€ä¹ˆå‘¢?_?ï¼Œæˆ‘å·²ç»è®°ä¸æ¸…æ¥šäº†å‘¢(é—å¿˜æˆåŠŸ!)'
+            retMsg = str(CQAt(QQID)) + str(key) + '´ú±íµÄÊÇÊ²Ã´ÄØ?_?£¬ÎÒÒÑ¾­¼Ç²»Çå³şÁËÄØ(ÒÅÍü³É¹¦!)'
         else:
-            retMsg = str(CQAt(QQID)) + 'æˆ‘è¿˜æ²¡å­¦è¿‡è¿™ä¸ªè¯å‘€( âŠ™ o âŠ™ )ï¼'
+            retMsg = str(CQAt(QQID)) + 'ÎÒ»¹Ã»Ñ§¹ıÕâ¸ö´ÊÑ½( ¡Ñ o ¡Ñ )£¡'
         try:
             CQSDK.SendGroupMsg(fromGroup, retMsg)
         except Exception as e:
@@ -865,11 +911,11 @@ class CQHandler(object):
 
     def list(self, fromGroup):
         if len(self.bfaceMap) > 0:
-            content = 'ç°åœ¨è®°ä½çš„å§¿åŠ¿æœ‰\n'
+            content = 'ÏÖÔÚ¼Ç×¡µÄ×ËÊÆÓĞ\n'
             for key in self.bfaceMap.keys():
                 content += (str(key) + ' ')
         else:
-            content = 'æˆ‘è¿˜ä»€ä¹ˆéƒ½ä¸ä¼šå‘¢%>_<%'
+            content = 'ÎÒ»¹Ê²Ã´¶¼²»»áÄØ%>_<%'
         try:
             CQSDK.SendGroupMsg(fromGroup, content)
         except Exception as e:
@@ -890,7 +936,7 @@ class CQHandler(object):
         member.rollSum += res_normlize
         member.rollNum += 1
         try:
-            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'æ·å‡ºäº†' + str(result) + '\n')
+            CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÖÀ³öÁË' + str(result) + '\n')
         except Exception as e:
             logging.exception(e)
 
@@ -909,7 +955,7 @@ class CQHandler(object):
         member.rollSum += res_normlize
         member.rollNum += 1
         try:
-            CQSDK.SendDiscussMsg(fromDiscuss, str(CQAt(QQID)) + 'æ·å‡ºäº†' + str(result) + '\n')
+            CQSDK.SendDiscussMsg(fromDiscuss, str(CQAt(QQID)) + 'ÖÀ³öÁË' + str(result) + '\n')
         except Exception as e:
             logging.exception(e)
 
@@ -938,7 +984,7 @@ class CQHandler(object):
                     break
             if findTag == False:
                 try:
-                    CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'è¯­éŸ³åº“ä¸­è¿˜æ²¡æœ‰è¿™ä¸ªéŸ³æº%>_<%')
+                    CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'ÓïÒô¿âÖĞ»¹Ã»ÓĞÕâ¸öÒôÔ´%>_<%')
                 except Exception as e:
                     logging.exception(e)
                 return
@@ -988,7 +1034,7 @@ class CQHandler(object):
             try:
                 response = requests.get(full_url, timeout=10)
             except Exception as e:
-                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'å’‹å›äº‹å„¿å•Š,ç½‘ç»œå¥½åƒå¼€å°å·®äº†')
+                CQSDK.SendGroupMsg(fromGroup, str(CQAt(QQID)) + 'Õ¦»ØÊÂ¶ù°¡,ÍøÂçºÃÏñ¿ªĞ¡²îÁË')
                 return
             json_result = json.loads(response.text)
             if len(json_result) == 0:
@@ -1151,7 +1197,7 @@ class CQHandler(object):
         # r = requests.get(dataUrl)
         # data = str(r.text)
         # IPArray = [str(l.split(',')[0]) for l in data.split('#')[:-1]]
-        # retMsg = '??????é”Ÿæ–¤æ‹·????IP???\n'
+        # retMsg = '??????ï¿½ï¿½????IP???\n'
         # for ip in IPArray:
         #     r = requests.get('http://ip138.com/ips138.asp?ip=' + str(ip))
         #     r.encoding = 'GBK'
@@ -1208,9 +1254,9 @@ class CQHandler(object):
                 if p < self.exProbility and self.members[fromQQ].exposionNum < maxExposionTime:
                     preLevel, afterLevel = self.explosion(fromQQ)
                     if preLevel != afterLevel:
-                        retMsg = str(CQAt(fromQQ)) + "åœ¨ä¿®ç‚¼ä¸­é¡¿æ‚Ÿï¼Œå®åŠ›è·å¾—å¤§å¹…æå‡ï¼Œç”± " + preLevel + " æå‡åˆ° " + afterLevel
+                        retMsg = str(CQAt(fromQQ)) + "ÔÚĞŞÁ¶ÖĞ¶ÙÎò£¬ÊµÁ¦»ñµÃ´ó·ùÌáÉı£¬ÓÉ " + preLevel + " ÌáÉıµ½ " + afterLevel
                     else:
-                        retMsg = str(CQAt(fromQQ)) + "åœ¨ä¿®ç‚¼ä¸­é¡¿æ‚Ÿï¼Œæ„Ÿè§‰å†…åŠ›æœ‰äº†å°å¹…æå‡"
+                        retMsg = str(CQAt(fromQQ)) + "ÔÚĞŞÁ¶ÖĞ¶ÙÎò£¬¸Ğ¾õÄÚÁ¦ÓĞÁËĞ¡·ùÌáÉı"
                     try:
                         CQSDK.SendGroupMsg(fromGroup, retMsg)
                     except Exception as e:
@@ -1218,7 +1264,7 @@ class CQHandler(object):
             
             self.repeat(fromGroup, msg)
 
-            msg = msg.replace('ï¼', '!')
+            msg = msg.replace('£¡', '!')
 
             if fromQQ in self.learnBuffer.keys():
                 self.learnBfaceAsyn(fromGroup, fromQQ, msg)
@@ -1234,7 +1280,7 @@ class CQHandler(object):
                     while para[0] == ' ':
                         para = para[1:]
                 if cmd == '.xx' and fromGroup == groupID[0]:
-                    retMsg = 'ä½ ç°åœ¨çš„å¢ƒç•Œä¸º ' + self.members[fromQQ].levelName + str(CQAt(fromQQ))
+                    retMsg = 'ÄãÏÖÔÚµÄ¾³½çÎª ' + self.members[fromQQ].levelName + str(CQAt(fromQQ))
                     try:
                         CQSDK.SendGroupMsg(fromGroup, retMsg)
                     except Exception as e:
@@ -1242,7 +1288,7 @@ class CQHandler(object):
                 elif cmd == '!save':
                     self.save()
                     try:
-                        CQSDK.SendGroupMsg(fromGroup, "æ•°æ®ä¿å­˜æˆåŠŸ")
+                        CQSDK.SendGroupMsg(fromGroup, "Êı¾İ±£´æ³É¹¦")
                     except Exception as e:
                         logging.exception(e)
                 elif cmd == '!idol':
@@ -1273,13 +1319,14 @@ class CQHandler(object):
                 elif cmd == '!check':
                     self.drawQuery(fromGroup, fromQQ)
                 elif cmd == '!spy':
-                    msg='æ²¡æœ‰' #
+                    msg='Ã»ÓĞ' #
                 elif cmd == '!dota':
                     self.dota2Match(fromGroup, fromQQ, para)
                 elif cmd == '!bind':
                     self.bindDotaAccount(fromGroup, fromQQ, para)
+                elif cmd == '!search':
+                    self.recognize(fromGroup, fromQQ, para)
 
-            
             logging.info("flag4")
 
             if msg in self.bfaceMap.keys():
@@ -1296,7 +1343,7 @@ class CQHandler(object):
 
     def OnEvent_DiscussMsg(self, subType, sendTime, fromDiscuss, fromQQ, msg, font):
         logging.info('OnEvent_DiscussMsg: subType={0}, sendTime={1}, fromDiscuss={2}, fromQQ={3}, msg={4}, font={5}'.format(subType, sendTime, fromDiscuss, fromQQ, msg, font))
-        msg = msg.replace('ï¼', '!')
+        msg = msg.replace('£¡', '!')
         content = msg.lower()
         result = re.findall(self._key_regex, content)
         if result:
